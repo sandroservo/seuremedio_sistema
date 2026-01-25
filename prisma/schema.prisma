@@ -1,0 +1,192 @@
+/**
+ * Autor: Sandro Servo
+ * Site: https://cloudservo.com.br
+ * Schema do banco de dados - Seu Remédio
+ */
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum UserRole {
+  CLIENT
+  ADMIN
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_PROGRESS
+  DELIVERED
+  FAILED
+}
+
+// Modelo de Usuário
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          UserRole  @default(CLIENT)
+  phone         String?
+  address       String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relacionamentos
+  orders        Order[]        @relation("ClientOrders")
+  deliveries    DeliveryTask[] @relation("DeliveryPerson")
+  accounts      Account[]
+  sessions      Session[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// Modelo de Medicamento
+model Medication {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  description          String
+  price                Decimal  @db.Decimal(10, 2)
+  category             String
+  requiresPrescription Boolean  @default(false)
+  stock                Int      @default(0)
+  image                String?
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relacionamentos
+  orderItems OrderItem[]
+
+  @@index([name])
+  @@index([category])
+}
+
+// Modelo de Pedido
+model Order {
+  id              String      @id @default(cuid())
+  clientId        String
+  totalPrice      Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(PENDING)
+  shippingAddress String
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relacionamentos
+  client       User          @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
+  items        OrderItem[]
+  deliveryTask DeliveryTask?
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Modelo de Item do Pedido
+model OrderItem {
+  id           String  @id @default(cuid())
+  orderId      String
+  medicationId String
+  quantity     Int
+  price        Decimal @db.Decimal(10, 2)
+
+  // Relacionamentos
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id])
+
+  @@index([orderId])
+  @@index([medicationId])
+}
+
+// Modelo de Tarefa de Entrega
+model DeliveryTask {
+  id                    String         @id @default(cuid())
+  orderId               String         @unique
+  deliveryPersonId      String
+  status                DeliveryStatus @default(PENDING)
+  currentLatitude       Float?
+  currentLongitude      Float?
+  customerAddress       String
+  customerLatitude      Float?
+  customerLongitude     Float?
+  estimatedDeliveryTime DateTime?
+  deliveredAt           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  // Relacionamentos
+  order          Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPerson User  @relation("DeliveryPerson", fields: [deliveryPersonId], references: [id])
+
+  @@index([deliveryPersonId])
+  @@index([status])
+}
+
+// NextAuth - Account
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// NextAuth - Session
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NextAuth - VerificationToken
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Modelo de Configurações do Sistema
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
