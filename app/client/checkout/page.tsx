@@ -324,26 +324,26 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-[#2D1B4E] sticky top-0 z-40 shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Logo size="sm" />
-            <span className="text-white font-medium">Finalizar Compra</span>
+            <span className="text-white font-medium text-sm sm:text-base">Checkout</span>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/client/dashboard')}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white/10 px-2 sm:px-3"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Voltar</span>
           </Button>
         </div>
       </header>
 
       {/* Progress Steps */}
       <div className="bg-muted/50 border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {[
               { key: 'review', label: 'Revisão', icon: ShoppingBag },
@@ -371,8 +371,8 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-4">
             {/* Step: Review */}
@@ -518,10 +518,10 @@ export default function CheckoutPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {[
-                      { key: 'pix', label: 'PIX', icon: QrCode, desc: 'Aprovação imediata' },
-                      { key: 'credit', label: 'Crédito', icon: CreditCard, desc: '12x' },
+                      { key: 'pix', label: 'PIX', icon: QrCode, desc: 'Instantâneo' },
+                      { key: 'credit', label: 'Crédito', icon: CreditCard, desc: 'Até 12x' },
                       { key: 'cash', label: 'Dinheiro', icon: Banknote, desc: 'Na entrega' },
                     ].map((method) => {
                       const Icon = method.icon;
@@ -529,15 +529,15 @@ export default function CheckoutPage() {
                         <button
                           key={method.key}
                           onClick={() => setPaymentMethod(method.key as PaymentMethod)}
-                          className={`p-4 rounded-lg border-2 text-center transition ${
+                          className={`p-3 sm:p-4 rounded-xl border-2 text-center transition active:scale-95 min-h-[70px] ${
                             paymentMethod === method.key
                               ? 'border-primary bg-primary/5'
                               : 'border-muted hover:border-primary/50'
                           }`}
                         >
-                          <Icon className={`h-6 w-6 mx-auto mb-2 ${paymentMethod === method.key ? 'text-primary' : 'text-muted-foreground'}`} />
-                          <p className="font-medium text-sm">{method.label}</p>
-                          <p className="text-xs text-muted-foreground">{method.desc}</p>
+                          <Icon className={`h-6 w-6 mx-auto mb-1 sm:mb-2 ${paymentMethod === method.key ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <p className="font-medium text-xs sm:text-sm">{method.label}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">{method.desc}</p>
                         </button>
                       );
                     })}

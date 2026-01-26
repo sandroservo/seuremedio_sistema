@@ -19,7 +19,14 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { Logo } from '@/components/logo';
-import { Loader2, Plus, Minus, Trash2, X, ShoppingCart } from 'lucide-react';
+import { Loader2, Plus, Minus, Trash2, X, ShoppingCart, Menu } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { MedicationImage } from '@/components/medication-image';
 
 const CART_STORAGE_KEY = 'seuremedio_cart';
@@ -39,6 +46,7 @@ export function ClientDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'browse' | 'orders'>('browse');
   const [checkoutFeedback, setCheckoutFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   // Carregar carrinho do localStorage
   useEffect(() => {
@@ -131,17 +139,17 @@ export function ClientDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-[#2D1B4E] sticky top-0 z-40 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <Logo size="sm" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {user ? (
               <>
-                <span className="text-sm text-white/80">{user.name}</span>
+                <span className="text-xs sm:text-sm text-white/80 hidden sm:inline">{user.name}</span>
                 <Button 
                   variant="secondary" 
                   size="sm" 
                   onClick={logout}
-                  className="bg-white/10 text-white border border-white/30 hover:bg-white/20"
+                  className="bg-white/10 text-white border border-white/30 hover:bg-white/20 text-xs sm:text-sm px-2 sm:px-3"
                 >
                   Sair
                 </Button>
@@ -151,7 +159,7 @@ export function ClientDashboard() {
                 variant="secondary" 
                 size="sm" 
                 onClick={() => router.push('/login')}
-                className="bg-white/10 text-white border border-white/30 hover:bg-white/20"
+                className="bg-white/10 text-white border border-white/30 hover:bg-white/20 text-xs sm:text-sm px-2 sm:px-3"
               >
                 Entrar
               </Button>
@@ -160,9 +168,9 @@ export function ClientDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-24 lg:pb-8">
         <div className="flex gap-8">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex gap-2 mb-6">
               <button
                 onClick={() => setActiveTab('browse')}
@@ -190,14 +198,14 @@ export function ClientDashboard() {
 
             {activeTab === 'browse' && (
               <div className="space-y-6">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
                   <Input
                     placeholder="Buscar medicamentos..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-md"
+                    className="w-full sm:max-w-md"
                   />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                     {filteredMedications.length} produtos
                   </span>
                 </div>
@@ -214,11 +222,11 @@ export function ClientDashboard() {
                   </Card>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                       {filteredMedications.map((med) => (
-                        <Card key={med.id} className="hover:shadow-lg transition overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex gap-4">
+                        <Card key={med.id} className="hover:shadow-lg transition overflow-hidden active:scale-[0.99]">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex gap-3 sm:gap-4">
                               <MedicationImage 
                                 category={med.category} 
                                 name={med.name} 
@@ -226,26 +234,26 @@ export function ClientDashboard() {
                                 size="lg"
                               />
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-base leading-tight mb-1 truncate">
+                                <h3 className="font-semibold text-sm sm:text-base leading-tight mb-1 line-clamp-2">
                                   {med.name}
                                 </h3>
-                                <p className="text-xs text-muted-foreground mb-2">{med.category}</p>
-                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                <p className="text-xs text-muted-foreground mb-1 sm:mb-2">{med.category}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2 mb-1 sm:mb-2 hidden sm:block">
                                   {med.description}
                                 </p>
                                 {med.requiresPrescription && (
-                                  <span className="inline-block text-[10px] bg-amber-100 text-amber-700 rounded px-2 py-0.5 mb-2">
+                                  <span className="inline-block text-[10px] bg-amber-100 text-amber-700 rounded px-2 py-0.5">
                                     Requer receita
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                              <div>
-                                <span className="text-xl font-bold text-primary">
+                            <div className="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t gap-2">
+                              <div className="min-w-0">
+                                <span className="text-lg sm:text-xl font-bold text-primary">
                                   R${med.price.toFixed(2)}
                                 </span>
-                                <span className="text-xs text-muted-foreground ml-2">
+                                <span className="text-[10px] sm:text-xs text-muted-foreground ml-1 sm:ml-2">
                                   {med.stock} em estoque
                                 </span>
                               </div>
@@ -253,9 +261,10 @@ export function ClientDashboard() {
                                 onClick={() => handleAddToCart(med.id)}
                                 disabled={med.stock === 0}
                                 size="sm"
+                                className="shrink-0 min-h-[44px] sm:h-9 px-3 sm:px-3 text-sm"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
-                                Adicionar
+                                <span className="sm:inline">Adicionar</span>
                               </Button>
                             </div>
                           </CardContent>
@@ -356,7 +365,7 @@ export function ClientDashboard() {
           </div>
 
           {activeTab === 'browse' && (
-            <div className="w-80">
+            <div className="w-80 hidden lg:block">
               <Card className="sticky top-24">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -439,6 +448,111 @@ export function ClientDashboard() {
           )}
         </div>
       </main>
+
+      {/* Botão flutuante do carrinho - Mobile */}
+      {activeTab === 'browse' && (
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                size="lg" 
+                className="h-16 w-16 rounded-full shadow-xl relative"
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs font-bold h-6 w-6 rounded-full flex items-center justify-center">
+                    {cartItems.reduce((sum, [, qty]) => sum + qty, 0)}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+              <SheetHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <SheetTitle className="text-xl">Carrinho</SheetTitle>
+                  {cartItems.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearCart}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Limpar tudo
+                    </Button>
+                  )}
+                </div>
+              </SheetHeader>
+              <div className="flex flex-col h-[calc(100%-4rem)]">
+                {cartItems.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                    <ShoppingCart className="h-16 w-16 mb-4 opacity-30" />
+                    <p className="text-lg">Carrinho vazio</p>
+                    <p className="text-sm">Adicione produtos para continuar</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+                      {cartItems.map(([medId, qty]) => {
+                        const med = medications.find((m) => m.id === medId);
+                        return (
+                          <div key={medId} className="bg-muted/50 rounded-xl p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <p className="font-semibold text-base leading-tight flex-1 pr-2">{med?.name}</p>
+                              <button
+                                onClick={() => handleDeleteFromCart(medId)}
+                                className="text-muted-foreground hover:text-destructive transition p-1"
+                              >
+                                <X className="h-5 w-5" />
+                              </button>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleRemoveFromCart(medId)}
+                                  className="h-11 w-11 rounded-full bg-background border-2 flex items-center justify-center hover:bg-muted transition active:scale-95"
+                                >
+                                  <Minus className="h-5 w-5" />
+                                </button>
+                                <span className="w-10 text-center font-bold text-lg">{qty}</span>
+                                <button
+                                  onClick={() => handleAddToCart(medId)}
+                                  className="h-11 w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition active:scale-95"
+                                >
+                                  <Plus className="h-5 w-5" />
+                                </button>
+                              </div>
+                              <p className="font-bold text-primary text-lg">
+                                R${((med?.price || 0) * qty).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="border-t pt-4 space-y-4 bg-background">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold">Total:</span>
+                        <span className="text-2xl font-bold text-primary">R${cartTotal.toFixed(2)}</span>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          setMobileCartOpen(false);
+                          handleCheckout();
+                        }} 
+                        className="w-full h-14 text-lg"
+                      >
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Finalizar Compra
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
+
       <AlertDialog open={!!checkoutFeedback} onOpenChange={(open) => !open && setCheckoutFeedback(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
