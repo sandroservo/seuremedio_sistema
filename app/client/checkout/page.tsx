@@ -67,10 +67,15 @@ export default function CheckoutPage() {
     number: '',
     complement: '',
     neighborhood: '',
+    state: '',
     city: '',
     zipCode: '',
     reference: '',
   });
+  
+  // Estados e cidades
+  const [states, setStates] = useState<{ uf: string; name: string }[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [cardData, setCardData] = useState({
@@ -105,6 +110,26 @@ export default function CheckoutPage() {
       .then(data => setAsaasConfigured(data.configured))
       .catch(() => setAsaasConfigured(false));
   }, []);
+
+  // Carregar estados brasileiros
+  useEffect(() => {
+    fetch('/api/locations/states')
+      .then(res => res.json())
+      .then(data => setStates(data))
+      .catch(() => setStates([]));
+  }, []);
+
+  // Carregar cidades quando o estado muda
+  useEffect(() => {
+    if (address.state) {
+      fetch(`/api/locations/cities?uf=${address.state}`)
+        .then(res => res.json())
+        .then(data => setCities(data))
+        .catch(() => setCities([]));
+    } else {
+      setCities([]);
+    }
+  }, [address.state]);
 
   // Carregar carrinho do localStorage
   useEffect(() => {
@@ -145,7 +170,7 @@ export default function CheckoutPage() {
   const total = subtotal + DELIVERY_FEE;
 
   const handleAddressSubmit = () => {
-    if (!address.street || !address.number || !address.neighborhood || !address.city || !address.zipCode) {
+    if (!address.street || !address.number || !address.neighborhood || !address.state || !address.city || !address.zipCode) {
       setError('Preencha todos os campos obrigatórios');
       return;
     }
@@ -469,14 +494,33 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Estado *</label>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={address.state}
+                        onChange={(e) => setAddress({ ...address, state: e.target.value, city: '' })}
+                      >
+                        <option value="">Selecione</option>
+                        {states.map((s) => (
+                          <option key={s.uf} value={s.uf}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="text-sm font-medium">Cidade *</label>
-                      <Input
-                        placeholder="Cidade"
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         value={address.city}
                         onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                      />
+                        disabled={!address.state}
+                      >
+                        <option value="">{address.state ? 'Selecione a cidade' : 'Selecione o estado primeiro'}</option>
+                        {cities.map((city) => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-sm font-medium">CEP *</label>
