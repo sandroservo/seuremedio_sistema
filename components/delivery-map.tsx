@@ -11,13 +11,32 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const deliveryIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+const deliveryIcon = new L.DivIcon({
+  className: 'delivery-marker',
+  html: `<div style="
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    border: 3px solid white;
+  ">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="5" cy="17" r="2"/>
+      <circle cx="19" cy="17" r="2"/>
+      <path d="M12 17V5"/>
+      <path d="m8 8 4-3 4 3"/>
+      <path d="M7 17h10"/>
+      <path d="M5 9h4l2 3h6l1-4h2"/>
+      <path d="M14 17h-4"/>
+    </svg>
+  </div>`,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
 });
 
 const customerIcon = new L.Icon({
@@ -57,7 +76,7 @@ function AnimatedMarker({
   children 
 }: { 
   position: [number, number]; 
-  icon: L.Icon; 
+  icon: L.Icon | L.DivIcon; 
   children: React.ReactNode;
 }) {
   const markerRef = useRef<L.Marker>(null);
