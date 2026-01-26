@@ -506,7 +506,7 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
                       { key: 'pix', label: 'PIX', icon: QrCode, desc: 'Aprovação imediata' },
-                      { key: 'credit', label: 'Crédito', icon: CreditCard, desc: 'Até 12x' },
+                      { key: 'credit', label: 'Crédito', icon: CreditCard, desc: '12x' },
                       { key: 'cash', label: 'Dinheiro', icon: Banknote, desc: 'Na entrega' },
                     ].map((method) => {
                       const Icon = method.icon;
