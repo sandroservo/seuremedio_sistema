@@ -80,16 +80,28 @@ model Medication {
   @@index([category])
 }
 
+// Enum de Status de Pagamento
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  OVERDUE
+  REFUNDED
+  CANCELLED
+}
+
 // Modelo de Pedido
 model Order {
-  id              String      @id @default(cuid())
+  id              String        @id @default(cuid())
   clientId        String
-  totalPrice      Decimal     @db.Decimal(10, 2)
-  status          OrderStatus @default(PENDING)
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  status          OrderStatus   @default(PENDING)
   shippingAddress String
   notes           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  paymentId       String?
+  paymentMethod   String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   // Relacionamentos
   client       User          @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
@@ -99,6 +111,7 @@ model Order {
   @@index([clientId])
   @@index([status])
   @@index([createdAt])
+  @@index([paymentId])
 }
 
 // Modelo de Item do Pedido
