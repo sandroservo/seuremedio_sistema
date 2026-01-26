@@ -187,6 +187,7 @@ export function AdminDashboard() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(bannerForm),
       });
 
@@ -225,7 +226,7 @@ export function AdminDashboard() {
   // Excluir banner
   const handleDeleteBanner = async (id: string) => {
     try {
-      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) throw new Error('Erro ao excluir');
       setFeedback({
         type: 'success',
