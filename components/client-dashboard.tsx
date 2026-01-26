@@ -67,6 +67,12 @@ export function ClientDashboard() {
     icon: string | null;
     color: string | null;
   }>>([]);
+  
+  // Drag to scroll para categorias
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   // Carregar banners da API
   useEffect(() => {
@@ -144,6 +150,26 @@ export function ClientDashboard() {
       })
       .catch(() => {});
   }, []);
+
+  // Handlers para drag-to-scroll das categorias
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!categoriesRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - categoriesRef.current.offsetLeft);
+    setScrollLeft(categoriesRef.current.scrollLeft);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !categoriesRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoriesRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    categoriesRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   // Carregar carrinho do localStorage
   useEffect(() => {
@@ -396,13 +422,20 @@ export function ClientDashboard() {
                         Ver todas <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                    <div 
+                      ref={categoriesRef}
+                      onMouseDown={handleMouseDown}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onMouseMove={handleMouseMove}
+                      className={`flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    >
                       {categories.map((cat) => {
                         const isSelected = selectedCategory === cat.name;
                         return (
                           <button
                             key={cat.id}
-                            onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
+                            onClick={() => !isDragging && setSelectedCategory(isSelected ? null : cat.name)}
                             className={`flex-shrink-0 flex flex-col items-center p-3 sm:p-4 rounded-xl transition active:scale-95 min-w-[80px] sm:min-w-[100px] ${
                               isSelected 
                                 ? 'bg-primary/10 ring-2 ring-primary' 
