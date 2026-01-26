@@ -342,7 +342,7 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'categories') {
+    if (activeTab === 'categories' || activeTab === 'medications') {
       loadCategories();
     }
   }, [activeTab, loadCategories]);
@@ -1133,8 +1133,8 @@ export function AdminDashboard() {
                           required
                         >
                           <option value="">Selecione...</option>
-                          {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>
                           ))}
                         </select>
                       </div>
