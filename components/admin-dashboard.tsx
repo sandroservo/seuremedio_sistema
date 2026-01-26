@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Logo } from '@/components/logo';
 import { MedicationImage } from '@/components/medication-image';
-import { Loader2, Plus, Pencil, Trash2, X, Check, Package, Search, Upload, ImageIcon, MapPin } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, X, Check, Package, Search, Upload, ImageIcon, MapPin, Image } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Importa mapa dinamicamente para evitar erro de SSR
@@ -78,7 +78,7 @@ export function AdminDashboard() {
   const { medications, isLoading: loadingMeds, isLoadingMore, hasMore, loadMore, addMedication, editMedication, removeMedication, refetch } = useMedications();
   const { orders, isLoading: loadingOrders, changeStatus, refetch: refetchOrders } = useOrders();
   const { deliveries, isLoading: loadingDeliveries } = useDeliveries();
-  const [activeTab, setActiveTab] = useState<'orders' | 'medications' | 'deliveries' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'medications' | 'deliveries' | 'banners' | 'settings'>('orders');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState({
     asaas_api_key: '',
@@ -94,6 +94,36 @@ export function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; title: string; message: string } | null>(null);
   const observerRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para banners
+  interface Banner {
+    id: string;
+    title: string;
+    subtitle: string;
+    discount: string;
+    bgColor: string;
+    borderColor: string;
+    image: string | null;
+    action: string | null;
+    active: boolean;
+    order: number;
+  }
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loadingBanners, setLoadingBanners] = useState(false);
+  const [showBannerForm, setShowBannerForm] = useState(false);
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+  const [bannerForm, setBannerForm] = useState({
+    title: '',
+    subtitle: '',
+    discount: '',
+    bgColor: 'from-amber-50 to-orange-50',
+    borderColor: 'border-amber-100',
+    image: '',
+    action: '',
+    active: true,
+    order: 0
+  });
+  const [deleteBannerConfirm, setDeleteBannerConfirm] = useState<string | null>(null);
 
   // Scroll infinito para medicamentos
   useEffect(() => {
@@ -126,6 +156,110 @@ export function AdminDashboard() {
         .catch(() => {});
     }
   }, [activeTab]);
+
+  // Carrega banners
+  const loadBanners = useCallback(async () => {
+    setLoadingBanners(true);
+    try {
+      const res = await fetch('/api/banners');
+      const data = await res.json();
+      setBanners(data);
+    } catch {
+      console.error('Erro ao carregar banners');
+    } finally {
+      setLoadingBanners(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'banners') {
+      loadBanners();
+    }
+  }, [activeTab, loadBanners]);
+
+  // Salvar banner
+  const handleSaveBanner = async () => {
+    setIsSubmitting(true);
+    try {
+      const url = editingBannerId ? `/api/banners/${editingBannerId}` : '/api/banners';
+      const method = editingBannerId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bannerForm),
+      });
+
+      if (!res.ok) throw new Error('Erro ao salvar banner');
+
+      setFeedback({
+        type: 'success',
+        title: 'Sucesso!',
+        message: editingBannerId ? 'Banner atualizado com sucesso.' : 'Banner criado com sucesso.',
+      });
+      setShowBannerForm(false);
+      setEditingBannerId(null);
+      setBannerForm({
+        title: '',
+        subtitle: '',
+        discount: '',
+        bgColor: 'from-amber-50 to-orange-50',
+        borderColor: 'border-amber-100',
+        image: '',
+        action: '',
+        active: true,
+        order: 0
+      });
+      loadBanners();
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: 'Não foi possível salvar o banner.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Excluir banner
+  const handleDeleteBanner = async (id: string) => {
+    try {
+      const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erro ao excluir');
+      setFeedback({
+        type: 'success',
+        title: 'Excluído!',
+        message: 'Banner removido com sucesso.',
+      });
+      loadBanners();
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: 'Não foi possível excluir o banner.',
+      });
+    } finally {
+      setDeleteBannerConfirm(null);
+    }
+  };
+
+  // Editar banner
+  const handleEditBanner = (banner: Banner) => {
+    setBannerForm({
+      title: banner.title,
+      subtitle: banner.subtitle,
+      discount: banner.discount,
+      bgColor: banner.bgColor,
+      borderColor: banner.borderColor,
+      image: banner.image || '',
+      action: banner.action || '',
+      active: banner.active,
+      order: banner.order
+    });
+    setEditingBannerId(banner.id);
+    setShowBannerForm(true);
+  };
 
   // Salvar configurações
   const handleSaveSettings = async () => {
@@ -384,6 +518,16 @@ export function AdminDashboard() {
             }`}
           >
             Medicamentos
+          </button>
+          <button
+            onClick={() => setActiveTab('banners')}
+            className={`px-4 py-2 rounded-lg font-medium transition ${
+              activeTab === 'banners'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            Banners
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -919,6 +1063,219 @@ export function AdminDashboard() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {activeTab === 'banners' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">Banners Promocionais</h2>
+                <p className="text-sm text-muted-foreground">Gerencie os banners do slideshow na tela inicial</p>
+              </div>
+              <Button 
+                onClick={() => {
+                  setBannerForm({
+                    title: '',
+                    subtitle: '',
+                    discount: '',
+                    bgColor: 'from-amber-50 to-orange-50',
+                    borderColor: 'border-amber-100',
+                    image: '',
+                    action: '',
+                    active: true,
+                    order: banners.length
+                  });
+                  setEditingBannerId(null);
+                  setShowBannerForm(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Novo Banner
+              </Button>
+            </div>
+
+            {showBannerForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingBannerId ? 'Editar Banner' : 'Novo Banner'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Título</label>
+                      <Input
+                        value={bannerForm.title}
+                        onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                        placeholder="Ex: Aproveite a Oferta"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Subtítulo</label>
+                      <Input
+                        value={bannerForm.subtitle}
+                        onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
+                        placeholder="Ex: Ofertas em Medicamentos"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Desconto/Destaque</label>
+                      <Input
+                        value={bannerForm.discount}
+                        onChange={(e) => setBannerForm({ ...bannerForm, discount: e.target.value })}
+                        placeholder="Ex: 20 ou Grátis"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">URL da Imagem</label>
+                      <Input
+                        value={bannerForm.image}
+                        onChange={(e) => setBannerForm({ ...bannerForm, image: e.target.value })}
+                        placeholder="/images/banner.png"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Cor de Fundo (gradient)</label>
+                      <Input
+                        value={bannerForm.bgColor}
+                        onChange={(e) => setBannerForm({ ...bannerForm, bgColor: e.target.value })}
+                        placeholder="from-amber-50 to-orange-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Cor da Borda</label>
+                      <Input
+                        value={bannerForm.borderColor}
+                        onChange={(e) => setBannerForm({ ...bannerForm, borderColor: e.target.value })}
+                        placeholder="border-amber-100"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Ordem</label>
+                      <Input
+                        type="number"
+                        value={bannerForm.order}
+                        onChange={(e) => setBannerForm({ ...bannerForm, order: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="bannerActive"
+                      checked={bannerForm.active}
+                      onChange={(e) => setBannerForm({ ...bannerForm, active: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="bannerActive" className="text-sm font-medium">Banner ativo</label>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowBannerForm(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveBanner} disabled={isSubmitting || !bannerForm.title}>
+                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {editingBannerId ? 'Atualizar' : 'Criar'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {loadingBanners ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : banners.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  <Image className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum banner cadastrado</p>
+                  <p className="text-sm">Clique em "Novo Banner" para adicionar</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {banners.map((banner) => (
+                  <Card key={banner.id} className={`overflow-hidden ${!banner.active ? 'opacity-50' : ''}`}>
+                    <div className={`flex bg-gradient-to-r ${banner.bgColor} border-b ${banner.borderColor}`}>
+                      <div className="flex-1 p-4">
+                        <p className="text-muted-foreground text-xs">{banner.subtitle}</p>
+                        <h3 className="font-bold">{banner.title}</h3>
+                        <div className="flex items-baseline gap-1 mt-1">
+                          {banner.discount !== 'Grátis' ? (
+                            <>
+                              <span className="text-2xl font-bold text-primary">{banner.discount}</span>
+                              <span className="text-sm font-bold text-primary">%</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-primary">{banner.discount}</span>
+                          )}
+                        </div>
+                      </div>
+                      {banner.image && (
+                        <div className="w-24 h-24 relative">
+                          <img 
+                            src={banner.image} 
+                            alt={banner.title}
+                            className="absolute inset-0 w-full h-full object-cover rounded-l-2xl"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="pt-3 pb-3 flex justify-between items-center">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Ordem: {banner.order}</span>
+                        <span>•</span>
+                        <span className={banner.active ? 'text-green-600' : 'text-red-600'}>
+                          {banner.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditBanner(banner)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => setDeleteBannerConfirm(banner.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <AlertDialog open={!!deleteBannerConfirm} onOpenChange={(open) => !open && setDeleteBannerConfirm(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Banner?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. O banner será removido permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => deleteBannerConfirm && handleDeleteBanner(deleteBannerConfirm)}
+                  >
+                    Excluir
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
 
