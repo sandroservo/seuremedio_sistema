@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Busca usuário pelo email
+    // Busca usuário pelo email incluindo a senha para verificação
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
       select: {
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
         role: true,
         phone: true,
         address: true,
+        password: true,
         createdAt: true,
       },
     })
@@ -40,12 +42,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Nota: Em produção, verificar hash da senha
-    // Por enquanto, aceita qualquer senha para demo
+    // Verifica a senha
+    const isValidPassword = await bcrypt.compare(password, user.password)
+    
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: 'Email ou senha inválidos' },
+        { status: 401 }
+      )
+    }
 
-    // Mapeia role para lowercase para compatibilidade
+    // Remove a senha do retorno e mapeia role para lowercase
+    const { password: _, ...userWithoutPassword } = user
     const mappedUser = {
-      ...user,
+      ...userWithoutPassword,
       role: user.role.toLowerCase() as 'admin' | 'client' | 'delivery',
     }
 
