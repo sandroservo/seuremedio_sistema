@@ -47,3 +47,34 @@ npm run dev -- -p 5000 -H 0.0.0.0
 - `CLIENT` - Regular customers who can browse and order
 - `ADMIN` - Administrators who manage medications and orders
 - `DELIVERY` - Delivery personnel who handle order delivery
+
+## Payment Integration (Asaas)
+
+The platform integrates with Asaas payment gateway for processing PIX and Boleto payments.
+
+### Payment Flow
+
+1. Customer selects payment method (PIX, Boleto, or Cash on Delivery)
+2. Order is created with status `PENDING` and `paymentStatus = PENDING`
+3. For online payments, Asaas webhook updates `paymentStatus` to `CONFIRMED` when payment is received
+4. Admin can only approve orders (change to `CONFIRMED`) when:
+   - `paymentStatus = CONFIRMED` for online payments, OR
+   - No `paymentId` exists (cash on delivery)
+5. Order follows state machine: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
+
+### Key Payment Files
+
+- `lib/asaas.ts` - Asaas API integration functions
+- `app/api/payments/route.ts` - Payment creation API
+- `app/api/webhooks/asaas/route.ts` - Webhook to receive payment confirmations
+- `app/api/orders/[id]/route.ts` - Order status updates with payment validation
+
+### Webhook URL
+
+Configure in Asaas dashboard: `https://[your-domain]/api/webhooks/asaas`
+
+### Settings
+
+Configure Asaas API key in Admin Dashboard → Settings:
+- `asaas_api_key` - Your Asaas API key
+- `asaas_environment` - `sandbox` or `production`
