@@ -1,17 +1,16 @@
 /**
  * Autor: Sandro Servo
  * Site: https://cloudservo.com.br
- * Componente de Mapa para Rastreamento de Entrega
+ * Componente de Mapa para Rastreamento de Entrega em Tempo Real
  */
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Corrige ícones do Leaflet no Next.js
 const deliveryIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -38,13 +37,80 @@ interface DeliveryMapProps {
   deliveryPersonName?: string;
   customerAddress?: string;
   showRoute?: boolean;
+  onDistanceUpdate?: (distance: number, duration: number) => void;
 }
 
-function MapUpdater({ center }: { center: [number, number] }) {
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function AnimatedMarker({ 
+  position, 
+  icon, 
+  children 
+}: { 
+  position: [number, number]; 
+  icon: L.Icon; 
+  children: React.ReactNode;
+}) {
+  const markerRef = useRef<L.Marker>(null);
+  const [currentPos, setCurrentPos] = useState(position);
+  
+  useEffect(() => {
+    if (!markerRef.current) return;
+    
+    const marker = markerRef.current;
+    const startPos = currentPos;
+    const endPos = position;
+    const duration = 1000;
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const easeProgress = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      
+      const newLat = startPos[0] + (endPos[0] - startPos[0]) * easeProgress;
+      const newLng = startPos[1] + (endPos[1] - startPos[1]) * easeProgress;
+      
+      marker.setLatLng([newLat, newLng]);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCurrentPos(endPos);
+      }
+    };
+    
+    if (startPos[0] !== endPos[0] || startPos[1] !== endPos[1]) {
+      requestAnimationFrame(animate);
+    }
+  }, [position]);
+  
+  return (
+    <Marker ref={markerRef} position={currentPos} icon={icon}>
+      {children}
+    </Marker>
+  );
+}
+
+function MapUpdater({ center, follow }: { center: [number, number]; follow: boolean }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    if (follow) {
+      map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
+    }
+  }, [center, map, follow]);
   return null;
 }
 
@@ -56,12 +122,29 @@ export function DeliveryMap({
   deliveryPersonName = 'Entregador',
   customerAddress = 'Destino',
   showRoute = true,
+  onDistanceUpdate,
 }: DeliveryMapProps) {
   const [mounted, setMounted] = useState(false);
+  const [followDelivery, setFollowDelivery] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const distanceInfo = useMemo(() => {
+    if (deliveryLat && deliveryLng && customerLat && customerLng) {
+      const distance = calculateDistance(deliveryLat, deliveryLng, customerLat, customerLng);
+      const avgSpeed = 25;
+      const duration = (distance / avgSpeed) * 60;
+      
+      if (onDistanceUpdate) {
+        onDistanceUpdate(distance, duration);
+      }
+      
+      return { distance, duration };
+    }
+    return null;
+  }, [deliveryLat, deliveryLng, customerLat, customerLng, onDistanceUpdate]);
 
   if (!mounted) {
     return (
@@ -71,10 +154,8 @@ export function DeliveryMap({
     );
   }
 
-  // Centro padrão (São Paulo)
   const defaultCenter: [number, number] = [-23.5505, -46.6333];
   
-  // Determina o centro do mapa
   let center: [number, number] = defaultCenter;
   if (deliveryLat && deliveryLng) {
     center = [deliveryLat, deliveryLng];
@@ -85,7 +166,6 @@ export function DeliveryMap({
   const hasDeliveryPosition = deliveryLat != null && deliveryLng != null;
   const hasCustomerPosition = customerLat != null && customerLng != null;
 
-  // Linha entre entregador e destino
   const routePositions: [number, number][] = [];
   if (hasDeliveryPosition && hasCustomerPosition && showRoute) {
     routePositions.push([deliveryLat!, deliveryLng!]);
@@ -93,10 +173,46 @@ export function DeliveryMap({
   }
 
   return (
-    <div className="w-full h-[400px] rounded-lg overflow-hidden border">
+    <div className="relative w-full h-[400px] rounded-lg overflow-hidden border">
+      {distanceInfo && (
+        <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur rounded-lg shadow-lg px-4 py-2">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Distância:</span>
+              <span className="font-semibold text-primary">
+                {distanceInfo.distance < 1 
+                  ? `${Math.round(distanceInfo.distance * 1000)}m`
+                  : `${distanceInfo.distance.toFixed(1)}km`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Tempo:</span>
+              <span className="font-semibold text-primary">
+                {distanceInfo.duration < 1 
+                  ? '< 1 min'
+                  : `~${Math.round(distanceInfo.duration)} min`}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {hasDeliveryPosition && (
+        <button
+          onClick={() => setFollowDelivery(!followDelivery)}
+          className={`absolute top-3 right-3 z-[1000] px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium transition-colors ${
+            followDelivery 
+              ? 'bg-primary text-white' 
+              : 'bg-white text-muted-foreground hover:bg-gray-100'
+          }`}
+        >
+          {followDelivery ? '📍 Seguindo' : '📍 Seguir'}
+        </button>
+      )}
+      
       <MapContainer
         center={center}
-        zoom={14}
+        zoom={15}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={true}
       >
@@ -105,16 +221,16 @@ export function DeliveryMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        <MapUpdater center={center} />
+        <MapUpdater center={center} follow={followDelivery && hasDeliveryPosition} />
 
         {hasDeliveryPosition && (
-          <Marker position={[deliveryLat!, deliveryLng!]} icon={deliveryIcon}>
+          <AnimatedMarker position={[deliveryLat!, deliveryLng!]} icon={deliveryIcon}>
             <Popup>
               <strong>🛵 {deliveryPersonName}</strong>
               <br />
               Posição atual do entregador
             </Popup>
-          </Marker>
+          </AnimatedMarker>
         )}
 
         {hasCustomerPosition && (

@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { ArrowLeft, Loader2, MapPin, Phone, User, Package } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, Phone, User, Package, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Importa mapa dinamicamente para evitar erro de SSR
@@ -47,28 +47,40 @@ export default function RastreamentoPage({ params }: { params: Promise<{ id: str
   const [delivery, setDelivery] = useState<DeliveryLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchLocation = async () => {
+  const fetchLocation = async (showRefresh = false) => {
+    if (showRefresh) setIsRefreshing(true);
     try {
       const res = await fetch(`/api/deliveries/${id}/location`);
       if (!res.ok) throw new Error('Entrega não encontrada');
       const data = await res.json();
       setDelivery(data);
+      setLastUpdate(new Date());
       setError(null);
     } catch {
       setError('Não foi possível carregar o rastreamento');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchLocation();
     
-    // Atualiza posição a cada 10 segundos
-    const interval = setInterval(fetchLocation, 10000);
+    const interval = setInterval(() => fetchLocation(), 5000);
     return () => clearInterval(interval);
   }, [id]);
+
+  const formatLastUpdate = () => {
+    if (!lastUpdate) return '';
+    const seconds = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
+    if (seconds < 5) return 'agora';
+    if (seconds < 60) return `${seconds}s atrás`;
+    return `${Math.floor(seconds / 60)}min atrás`;
+  };
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -140,9 +152,19 @@ export default function RastreamentoPage({ params }: { params: Promise<{ id: str
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Rastreamento da Entrega</h1>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(delivery.status)}`}>
-            {getStatusLabel(delivery.status)}
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => fetchLocation(true)}
+              disabled={isRefreshing}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {lastUpdate && <span>Atualizado {formatLastUpdate()}</span>}
+            </button>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(delivery.status)}`}>
+              {getStatusLabel(delivery.status)}
+            </span>
+          </div>
         </div>
 
         {/* Mapa */}
@@ -195,11 +217,14 @@ export default function RastreamentoPage({ params }: { params: Promise<{ id: str
         {delivery.status.toLowerCase() === 'in_progress' && (
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="py-4 flex items-center gap-3">
-              <Package className="h-6 w-6 text-blue-600" />
+              <div className="relative">
+                <Package className="h-6 w-6 text-blue-600" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full animate-pulse" />
+              </div>
               <div>
                 <p className="font-medium text-blue-900">Seu pedido está a caminho!</p>
                 <p className="text-sm text-blue-700">
-                  O mapa atualiza automaticamente a cada 10 segundos
+                  Rastreamento em tempo real - atualiza automaticamente
                 </p>
               </div>
             </CardContent>

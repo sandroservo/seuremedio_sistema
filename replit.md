@@ -92,6 +92,33 @@ Configure Asaas API key in Admin Dashboard → Settings:
 - `asaas_api_key` - Your Asaas API key
 - `asaas_environment` - `sandbox` or `production`
 
+## Real-Time Map Tracking
+
+The platform features real-time delivery tracking with animated map visualization.
+
+### Features
+
+- **Animated Markers**: Delivery person marker moves smoothly on the map
+- **5-Second Updates**: Location refreshes automatically every 5 seconds
+- **Distance & Time Display**: Shows remaining distance (km/m) and estimated time
+- **Follow Mode**: Toggle to follow the delivery person on the map
+- **Last Update Indicator**: Shows when the location was last updated
+- **Manual Refresh**: Click to manually refresh the location
+
+### How It Works
+
+1. Delivery person's app sends GPS coordinates via `watchPosition`
+2. Coordinates are sent to `/api/deliveries/[id]/location` (PUT)
+3. Customer's tracking page polls `/api/deliveries/[id]/location` (GET) every 5 seconds
+4. Map animates the marker transition smoothly between positions
+
+### Key Files
+
+- `components/delivery-map.tsx` - Map component with animated markers and distance calculation
+- `app/client/rastreamento/[id]/page.tsx` - Customer tracking page
+- `app/api/deliveries/[id]/location/route.ts` - API for location updates
+- `components/delivery-dashboard.tsx` - Delivery person dashboard with GPS tracking
+
 ## Banner Management
 
 Admins can manage the promotional slideshow banners displayed on the client dashboard.
