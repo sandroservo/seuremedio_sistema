@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { getToken } from 'next-auth/jwt'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 
@@ -14,18 +15,25 @@ type Params = { params: Promise<{ id: string }> }
 // POST /api/orders/[id]/confirm-payment - Confirma pagamento em dinheiro e finaliza entrega
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    // Verificar autenticação
-    const session = await getServerSession(authOptions)
+    // Verificar autenticação via token JWT (mais confiável em App Router)
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      )
+    if (!token) {
+      // Fallback para getServerSession
+      const session = await getServerSession(authOptions)
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: 'Não autorizado' },
+          { status: 401 }
+        )
+      }
     }
 
+    const userRole = token?.role as string
+    const userId = token?.id as string
+
     // Apenas ADMIN ou DELIVERY podem confirmar pagamentos em dinheiro
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'DELIVERY') {
+    if (userRole !== 'ADMIN' && userRole !== 'DELIVERY') {
       return NextResponse.json(
         { error: 'Apenas administradores ou entregadores podem confirmar pagamentos' },
         { status: 403 }
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     // Se for entregador, verificar se é o entregador deste pedido e se o pedido está em entrega
-    if (session.user.role === 'DELIVERY') {
+    if (userRole === 'DELIVERY') {
       if (!order.deliveryTask) {
         return NextResponse.json(
           { error: 'Este pedido ainda não foi atribuído para entrega' },
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         )
       }
       
-      if (order.deliveryTask.deliveryPersonId !== session.user.id) {
+      if (order.deliveryTask.deliveryPersonId !== userId) {
         return NextResponse.json(
           { error: 'Você não é o entregador deste pedido' },
           { status: 403 }
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     // Admin não pode confirmar pedidos cancelados ou já entregues
-    if (session.user.role === 'ADMIN') {
+    if (userRole === 'ADMIN') {
       if (order.status === 'CANCELLED' || order.status === 'DELIVERED') {
         return NextResponse.json(
           { error: 'Não é possível confirmar pagamento de pedidos cancelados ou já entregues' },
