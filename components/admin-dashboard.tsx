@@ -78,7 +78,7 @@ export function AdminDashboard() {
   const { medications, isLoading: loadingMeds, isLoadingMore, hasMore, loadMore, addMedication, editMedication, removeMedication, refetch } = useMedications();
   const { orders, isLoading: loadingOrders, changeStatus, refetch: refetchOrders } = useOrders();
   const { deliveries, isLoading: loadingDeliveries } = useDeliveries();
-  const [activeTab, setActiveTab] = useState<'orders' | 'medications' | 'deliveries' | 'banners' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'medications' | 'deliveries' | 'banners' | 'users' | 'categories' | 'settings'>('orders');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState({
     asaas_api_key: '',
@@ -111,6 +111,56 @@ export function AdminDashboard() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loadingBanners, setLoadingBanners] = useState(false);
   const [showBannerForm, setShowBannerForm] = useState(false);
+
+  // Estados para usuários
+  interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: 'CLIENT' | 'ADMIN' | 'DELIVERY';
+    phone: string | null;
+    address: string | null;
+    createdAt: string;
+  }
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'CLIENT' as 'CLIENT' | 'ADMIN' | 'DELIVERY',
+    phone: '',
+    address: ''
+  });
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<string | null>(null);
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('');
+
+  // Estados para categorias
+  interface Category {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    color: string | null;
+    active: boolean;
+    order: number;
+    _count?: { medications: number };
+  }
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    description: '',
+    icon: '',
+    color: '',
+    active: true,
+    order: 0
+  });
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
   const [bannerForm, setBannerForm] = useState({
     title: '',
@@ -176,6 +226,198 @@ export function AdminDashboard() {
       loadBanners();
     }
   }, [activeTab, loadBanners]);
+
+  // Carrega usuários
+  const loadUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const roleParam = userRoleFilter ? `?role=${userRoleFilter}` : '';
+      const res = await fetch(`/api/users${roleParam}`);
+      const data = await res.json();
+      setUsers(data.data || []);
+    } catch {
+      console.error('Erro ao carregar usuários');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [userRoleFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    }
+  }, [activeTab, loadUsers]);
+
+  // Salvar usuário
+  const handleSaveUser = async () => {
+    setIsSubmitting(true);
+    try {
+      const url = editingUserId ? `/api/users/${editingUserId}` : '/api/users';
+      const method = editingUserId ? 'PUT' : 'POST';
+      
+      const payload = editingUserId && !userForm.password 
+        ? { ...userForm, password: undefined } 
+        : userForm;
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Erro ao salvar usuário');
+      }
+
+      setFeedback({
+        type: 'success',
+        title: 'Sucesso!',
+        message: editingUserId ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.',
+      });
+      setShowUserForm(false);
+      setEditingUserId(null);
+      setUserForm({ name: '', email: '', password: '', role: 'CLIENT', phone: '', address: '' });
+      loadUsers();
+    } catch (error: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: error.message || 'Não foi possível salvar o usuário.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Excluir usuário
+  const handleDeleteUser = async (id: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Erro ao excluir');
+      setFeedback({
+        type: 'success',
+        title: 'Excluído!',
+        message: 'Usuário removido com sucesso.',
+      });
+      loadUsers();
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: 'Não foi possível excluir o usuário.',
+      });
+    } finally {
+      setDeleteUserConfirm(null);
+    }
+  };
+
+  // Editar usuário
+  const handleEditUser = (user: User) => {
+    setUserForm({
+      name: user.name,
+      email: user.email,
+      password: '',
+      role: user.role,
+      phone: user.phone || '',
+      address: user.address || ''
+    });
+    setEditingUserId(user.id);
+    setShowUserForm(true);
+  };
+
+  // Carrega categorias
+  const loadCategories = useCallback(async () => {
+    setLoadingCategories(true);
+    try {
+      const res = await fetch('/api/categories?all=true');
+      const data = await res.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch {
+      console.error('Erro ao carregar categorias');
+    } finally {
+      setLoadingCategories(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'categories') {
+      loadCategories();
+    }
+  }, [activeTab, loadCategories]);
+
+  // Salvar categoria
+  const handleSaveCategory = async () => {
+    setIsSubmitting(true);
+    try {
+      const url = editingCategoryId ? `/api/categories/${editingCategoryId}` : '/api/categories';
+      const method = editingCategoryId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(categoryForm),
+      });
+
+      if (!res.ok) throw new Error('Erro ao salvar categoria');
+
+      setFeedback({
+        type: 'success',
+        title: 'Sucesso!',
+        message: editingCategoryId ? 'Categoria atualizada com sucesso.' : 'Categoria criada com sucesso.',
+      });
+      setShowCategoryForm(false);
+      setEditingCategoryId(null);
+      setCategoryForm({ name: '', description: '', icon: '', color: '', active: true, order: 0 });
+      loadCategories();
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: 'Não foi possível salvar a categoria.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Excluir categoria
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Erro ao excluir');
+      setFeedback({
+        type: 'success',
+        title: 'Excluído!',
+        message: 'Categoria removida com sucesso.',
+      });
+      loadCategories();
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: 'Não foi possível excluir a categoria.',
+      });
+    } finally {
+      setDeleteCategoryConfirm(null);
+    }
+  };
+
+  // Editar categoria
+  const handleEditCategory = (category: Category) => {
+    setCategoryForm({
+      name: category.name,
+      description: category.description || '',
+      icon: category.icon || '',
+      color: category.color || '',
+      active: category.active,
+      order: category.order
+    });
+    setEditingCategoryId(category.id);
+    setShowCategoryForm(true);
+  };
 
   // Salvar banner
   const handleSaveBanner = async () => {
@@ -568,6 +810,26 @@ export function AdminDashboard() {
             }`}
           >
             Banners
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 rounded-lg font-medium transition ${
+              activeTab === 'users'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            Usuários
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`px-4 py-2 rounded-lg font-medium transition ${
+              activeTab === 'categories'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            Categorias
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -1339,6 +1601,349 @@ export function AdminDashboard() {
                   <Button 
                     variant="destructive" 
                     onClick={() => deleteBannerConfirm && handleDeleteBanner(deleteBannerConfirm)}
+                  >
+                    Excluir
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-4 justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">Gerenciar Usuários</h2>
+                <p className="text-sm text-muted-foreground">Cadastre e gerencie clientes, admins e entregadores</p>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={userRoleFilter}
+                  onChange={(e) => setUserRoleFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Todos</option>
+                  <option value="CLIENT">Clientes</option>
+                  <option value="ADMIN">Administradores</option>
+                  <option value="DELIVERY">Entregadores</option>
+                </select>
+                <Button 
+                  onClick={() => {
+                    setUserForm({ name: '', email: '', password: '', role: 'CLIENT', phone: '', address: '' });
+                    setEditingUserId(null);
+                    setShowUserForm(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Novo Usuário
+                </Button>
+              </div>
+            </div>
+
+            {showUserForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingUserId ? 'Editar Usuário' : 'Novo Usuário'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nome *</label>
+                      <Input
+                        value={userForm.name}
+                        onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                        placeholder="Nome completo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">E-mail *</label>
+                      <Input
+                        type="email"
+                        value={userForm.email}
+                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                        placeholder="email@exemplo.com"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Senha {editingUserId ? '(deixe vazio para manter)' : '*'}
+                      </label>
+                      <Input
+                        type="password"
+                        value={userForm.password}
+                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tipo de Usuário *</label>
+                      <select
+                        value={userForm.role}
+                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="CLIENT">Cliente</option>
+                        <option value="ADMIN">Administrador</option>
+                        <option value="DELIVERY">Entregador</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Telefone</label>
+                      <Input
+                        value={userForm.phone}
+                        onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Endereço</label>
+                      <Input
+                        value={userForm.address}
+                        onChange={(e) => setUserForm({ ...userForm, address: e.target.value })}
+                        placeholder="Endereço completo"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => { setShowUserForm(false); setEditingUserId(null); }}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveUser} disabled={isSubmitting || !userForm.name || !userForm.email || (!editingUserId && !userForm.password)}>
+                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {editingUserId ? 'Atualizar' : 'Criar'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {loadingUsers ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : users.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  <p>Nenhum usuário encontrado</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {users.map((u) => (
+                  <Card key={u.id}>
+                    <CardContent className="pt-4 flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium">{u.name}</h3>
+                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        <div className="flex gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                            u.role === 'DELIVERY' ? 'bg-blue-100 text-blue-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {u.role === 'ADMIN' ? 'Admin' : u.role === 'DELIVERY' ? 'Entregador' : 'Cliente'}
+                          </span>
+                          {u.phone && <span className="text-xs text-muted-foreground">{u.phone}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditUser(u)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => setDeleteUserConfirm(u.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <AlertDialog open={!!deleteUserConfirm} onOpenChange={(open) => !open && setDeleteUserConfirm(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Todos os pedidos deste usuário também serão removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => deleteUserConfirm && handleDeleteUser(deleteUserConfirm)}
+                  >
+                    Excluir
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {activeTab === 'categories' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">Categorias de Medicamentos</h2>
+                <p className="text-sm text-muted-foreground">Organize os medicamentos por categorias</p>
+              </div>
+              <Button 
+                onClick={() => {
+                  setCategoryForm({ name: '', description: '', icon: '', color: '', active: true, order: 0 });
+                  setEditingCategoryId(null);
+                  setShowCategoryForm(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Nova Categoria
+              </Button>
+            </div>
+
+            {showCategoryForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingCategoryId ? 'Editar Categoria' : 'Nova Categoria'}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nome *</label>
+                      <Input
+                        value={categoryForm.name}
+                        onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                        placeholder="Ex: Analgésicos"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Descrição</label>
+                      <Input
+                        value={categoryForm.description}
+                        onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                        placeholder="Descrição da categoria"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Ícone (emoji)</label>
+                      <Input
+                        value={categoryForm.icon}
+                        onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                        placeholder="💊"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Cor (Tailwind)</label>
+                      <Input
+                        value={categoryForm.color}
+                        onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                        placeholder="bg-blue-100"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Ordem</label>
+                      <Input
+                        type="number"
+                        value={categoryForm.order}
+                        onChange={(e) => setCategoryForm({ ...categoryForm, order: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="categoryActive"
+                      checked={categoryForm.active}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, active: e.target.checked })}
+                      className="rounded"
+                    />
+                    <label htmlFor="categoryActive" className="text-sm">Categoria ativa</label>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => { setShowCategoryForm(false); setEditingCategoryId(null); }}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveCategory} disabled={isSubmitting || !categoryForm.name}>
+                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {editingCategoryId ? 'Atualizar' : 'Criar'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {loadingCategories ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : categories.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  <p>Nenhuma categoria cadastrada</p>
+                  <p className="text-sm">Clique em "Nova Categoria" para adicionar</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {categories.map((cat) => (
+                  <Card key={cat.id} className={`${!cat.active ? 'opacity-50' : ''}`}>
+                    <CardContent className="pt-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                          {cat.icon && <span className="text-2xl">{cat.icon}</span>}
+                          <div>
+                            <h3 className="font-medium">{cat.name}</h3>
+                            {cat.description && (
+                              <p className="text-sm text-muted-foreground">{cat.description}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {cat._count?.medications || 0} medicamentos
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditCategory(cat)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => setDeleteCategoryConfirm(cat.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <AlertDialog open={!!deleteCategoryConfirm} onOpenChange={(open) => !open && setDeleteCategoryConfirm(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Categoria?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Os medicamentos desta categoria não serão excluídos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => deleteCategoryConfirm && handleDeleteCategory(deleteCategoryConfirm)}
                   >
                     Excluir
                   </Button>
