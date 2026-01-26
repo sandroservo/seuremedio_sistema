@@ -98,13 +98,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
         )
       }
 
-      // Validação: pedidos com pagamento online precisam de confirmação de pagamento
+      // Validação: todos os pedidos precisam de confirmação de pagamento
       // antes de avançar para qualquer estado de aprovação/fulfillment
       if (currentStatus === 'PENDING' && STATES_REQUIRING_PAYMENT.includes(newStatus)) {
-        const hasOnlinePayment = !!currentOrder.paymentId
         const paymentConfirmed = currentOrder.paymentStatus === 'CONFIRMED'
         
-        if (hasOnlinePayment && !paymentConfirmed) {
+        if (!paymentConfirmed) {
           return NextResponse.json(
             { error: 'Não é possível aprovar o pedido. O pagamento ainda não foi confirmado.' },
             { status: 400 }

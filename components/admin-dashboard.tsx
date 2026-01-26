@@ -683,6 +683,33 @@ export function AdminDashboard() {
     }
   };
 
+  const handleConfirmCashPayment = async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/confirm-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao confirmar pagamento');
+      }
+
+      await refetchOrders();
+      setFeedback({
+        type: 'success',
+        title: 'Pagamento confirmado!',
+        message: 'O pagamento em dinheiro foi confirmado. Agora você pode aprovar o pedido.',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: err?.message || 'Não foi possível confirmar o pagamento.',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price || !formData.category || isSubmitting) return;
@@ -886,6 +913,14 @@ export function AdminDashboard() {
                 const status = order.status.toLowerCase();
                 const paymentStatus = order.paymentStatus || 'PENDING';
                 const isPaymentConfirmed = paymentStatus === 'CONFIRMED';
+                const isCashPayment = order.paymentMethod === 'cash';
+                const needsCashConfirmation = isCashPayment && !isPaymentConfirmed && status === 'pending';
+
+                const paymentMethodLabels: Record<string, string> = {
+                  pix: 'PIX',
+                  credit_card: 'Cartão de Crédito',
+                  cash: '💵 Dinheiro',
+                };
 
                 return (
                   <Card key={order.id} className="overflow-hidden">
@@ -895,7 +930,7 @@ export function AdminDashboard() {
                           <CardTitle className="text-base">Pedido #{order.id.slice(0, 8).toUpperCase()}</CardTitle>
                           <CardDescription>
                             {new Date(order.createdAt).toLocaleString('pt-BR')} • Cliente: {order.client?.name || 'N/A'}
-                            {order.paymentMethod && ` • ${order.paymentMethod}`}
+                            {order.paymentMethod && ` • ${paymentMethodLabels[order.paymentMethod] || order.paymentMethod}`}
                           </CardDescription>
                         </div>
                         <div className="flex gap-2 flex-wrap">
@@ -909,6 +944,15 @@ export function AdminDashboard() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-4">
+                      {needsCashConfirmation && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+                          <span className="text-amber-600 text-xl">💵</span>
+                          <div>
+                            <p className="text-sm font-medium text-amber-800">Pagamento em dinheiro</p>
+                            <p className="text-xs text-amber-600">Aguardando confirmação do recebimento para liberar o pedido</p>
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <p className="text-sm font-medium mb-2">Itens do pedido:</p>
                         <div className="space-y-1">
@@ -939,6 +983,16 @@ export function AdminDashboard() {
                               >
                                 Cancelar
                               </Button>
+                              {needsCashConfirmation && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:bg-green-50 border-green-200"
+                                  onClick={() => handleConfirmCashPayment(order.id)}
+                                >
+                                  💵 Confirmar Pagamento
+                                </Button>
+                              )}
                               {isPaymentConfirmed && (
                                 <Button
                                   size="sm"
