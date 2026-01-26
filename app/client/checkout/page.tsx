@@ -85,6 +85,10 @@ export default function CheckoutPage() {
     cpf: '',
   });
   
+  // Dados para troco
+  const [needsChange, setNeedsChange] = useState(false);
+  const [changeAmount, setChangeAmount] = useState('');
+  
   // Dados do pagamento Asaas
   const [asaasConfigured, setAsaasConfigured] = useState(false);
   const [pixData, setPixData] = useState<{
@@ -185,10 +189,16 @@ export default function CheckoutPage() {
 
       const fullAddress = `${address.street}, ${address.number}${address.complement ? ` - ${address.complement}` : ''}, ${address.neighborhood}, ${address.city} - CEP: ${address.zipCode}${address.reference ? ` (Ref: ${address.reference})` : ''}`;
 
+      let orderNotes = '';
+      if (paymentMethod === 'cash' && needsChange && changeAmount) {
+        orderNotes = `💵 Troco para R$ ${changeAmount}`;
+      }
+      
       const order = await addOrder({
         clientId: user.id,
         shippingAddress: fullAddress,
         items,
+        ...(orderNotes && { notes: orderNotes }),
       });
 
       const orderId = order?.id || 'PEDIDO-' + Date.now();
@@ -622,16 +632,43 @@ export default function CheckoutPage() {
                   )}
 
                   {paymentMethod === 'cash' && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Banknote className="h-6 w-6 text-amber-600 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-amber-800">Pagamento na entrega</p>
-                          <p className="text-sm text-amber-700">
-                            Tenha o valor em mãos. O entregador pode ter troco limitado.
-                          </p>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <Banknote className="h-6 w-6 text-amber-600 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-amber-800">Pagamento na entrega</p>
+                            <p className="text-sm text-amber-700">
+                              Tenha o valor em mãos.
+                            </p>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="needsChange"
+                          checked={needsChange}
+                          onChange={(e) => setNeedsChange(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label htmlFor="needsChange" className="text-sm font-medium">
+                          Preciso de troco
+                        </label>
+                      </div>
+                      {needsChange && (
+                        <div>
+                          <label className="text-sm font-medium">Troco para quanto?</label>
+                          <Input
+                            placeholder="Ex: 100,00"
+                            value={changeAmount}
+                            onChange={(e) => setChangeAmount(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Informe o valor da nota que você vai pagar
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -692,7 +729,7 @@ export default function CheckoutPage() {
                         <p className="text-sm text-muted-foreground">
                           {paymentMethod === 'pix' && 'PIX - Aprovação imediata'}
                           {paymentMethod === 'credit' && `Cartão de crédito final ${cardData.number.slice(-4)}`}
-                                                    {paymentMethod === 'cash' && 'Dinheiro na entrega'}
+                                                    {paymentMethod === 'cash' && (needsChange && changeAmount ? `Dinheiro na entrega (Troco para R$ ${changeAmount})` : 'Dinheiro na entrega')}
                         </p>
                       </div>
                     </div>
