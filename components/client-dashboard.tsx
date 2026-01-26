@@ -417,7 +417,12 @@ export function ClientDashboard() {
                       <h3 className="font-semibold text-base sm:text-lg">Categorias</h3>
                       <button 
                         className="text-xs sm:text-sm text-primary flex items-center gap-1 hover:underline"
-                        onClick={() => setSelectedCategory(null)}
+                        onClick={() => {
+                          setSelectedCategory(null);
+                          if (categoriesRef.current) {
+                            categoriesRef.current.scrollTo({ left: categoriesRef.current.scrollWidth, behavior: 'smooth' });
+                          }
+                        }}
                       >
                         Ver todas <ChevronRight className="h-4 w-4" />
                       </button>
