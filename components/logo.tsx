@@ -29,35 +29,6 @@ const textSizeClasses = {
 export function Logo({ size = 'md', showText = true, className }: LogoProps) {
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      {/* Ícone da Pílula */}
-      <div
-        className={cn(
-          'relative flex items-center justify-center rounded-full',
-          'bg-gradient-to-br from-[#F97316] to-[#FBBF24]',
-          'shadow-lg shadow-orange-500/25',
-          sizeClasses[size]
-        )}
-      >
-        {/* Cruz médica */}
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          className="w-1/2 h-1/2 text-white"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        
-        {/* Linhas de velocidade */}
-        <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-          <div className="w-3 h-0.5 bg-[#FBBF24] rounded-full" />
-          <div className="w-2 h-0.5 bg-[#FBBF24] rounded-full opacity-75" />
-          <div className="w-1.5 h-0.5 bg-[#FBBF24] rounded-full opacity-50" />
-        </div>
-      </div>
-
       {/* Texto */}
       {showText && (
         <div className="flex flex-col leading-none">
