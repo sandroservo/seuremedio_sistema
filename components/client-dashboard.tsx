@@ -396,14 +396,14 @@ export function ClientDashboard() {
                         Ver todas <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                    <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                       {categories.map((cat) => {
                         const isSelected = selectedCategory === cat.name;
                         return (
                           <button
                             key={cat.id}
                             onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
-                            className={`flex flex-col items-center p-3 sm:p-4 rounded-xl transition active:scale-95 ${
+                            className={`flex-shrink-0 flex flex-col items-center p-3 sm:p-4 rounded-xl transition active:scale-95 min-w-[80px] sm:min-w-[100px] ${
                               isSelected 
                                 ? 'bg-primary/10 ring-2 ring-primary' 
                                 : 'bg-card hover:bg-muted border'
