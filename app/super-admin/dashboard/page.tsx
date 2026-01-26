@@ -51,7 +51,7 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'SUPER_ADMIN')) {
-      router.replace('/login');
+      router.replace('/super-admin/login');
     }
   }, [user, authLoading, router]);
 
