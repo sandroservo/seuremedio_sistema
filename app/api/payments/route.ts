@@ -78,13 +78,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualiza o pedido com o ID do pagamento
+    // Atualiza o pedido com o ID do pagamento e método
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        notes: `Pagamento Asaas: ${payment.id}`,
+        paymentId: payment.id,
+        paymentMethod: paymentMethod.toUpperCase(),
+        paymentStatus: 'PENDING',
+        notes: `Aguardando pagamento via ${paymentMethod.toUpperCase()}`,
       },
     });
+
+    console.log(`[Payment] Pedido ${orderId} - Pagamento ${payment.id} criado`);
 
     return NextResponse.json({
       paymentId: payment.id,
