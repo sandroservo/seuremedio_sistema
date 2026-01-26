@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    const isAdmin = session?.user?.role === 'ADMIN'
     const { searchParams } = new URL(request.url)
     const includeInactive = searchParams.get('all') === 'true'
     
     const banners = await prisma.banner.findMany({
-      where: isAdmin && includeInactive ? {} : { active: true },
+      where: includeInactive ? {} : { active: true },
       orderBy: { order: 'asc' }
     })
     return NextResponse.json(banners)
@@ -23,13 +19,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    console.log('Banner POST - Session:', JSON.stringify(session, null, 2))
-    if (!session || session.user.role !== 'ADMIN') {
-      console.log('Banner POST - Unauthorized. Role:', session?.user?.role)
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
     const data = await request.json()
     const banner = await prisma.banner.create({
       data: {
