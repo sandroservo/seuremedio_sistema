@@ -194,10 +194,17 @@ export default function CheckoutPage() {
         orderNotes = `💵 Troco para R$ ${changeAmount}`;
       }
       
+      const paymentMethodMap: Record<PaymentMethod, string> = {
+        pix: 'pix',
+        credit: 'credit_card',
+        cash: 'cash',
+      };
+
       const order = await addOrder({
         clientId: user.id,
         shippingAddress: fullAddress,
         items,
+        paymentMethod: paymentMethodMap[paymentMethod],
         ...(orderNotes && { notes: orderNotes }),
       });
 

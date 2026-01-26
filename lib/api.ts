@@ -121,6 +121,7 @@ interface CreateOrderInput {
   clientId: string;
   shippingAddress: string;
   notes?: string;
+  paymentMethod?: string;
   items: Array<{
     medicationId: string;
     quantity: number;

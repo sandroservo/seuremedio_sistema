@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, items, shippingAddress, notes } = body
+    const { clientId, items, shippingAddress, notes, paymentMethod } = body
 
     if (!clientId || !items || items.length === 0 || !shippingAddress) {
       return NextResponse.json(
@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
           totalPrice,
           shippingAddress,
           notes,
+          ...(paymentMethod && { paymentMethod }),
           items: {
             create: orderItems,
           },
