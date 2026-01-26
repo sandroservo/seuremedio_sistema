@@ -19,7 +19,10 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { Logo } from '@/components/logo';
-import { Loader2, Plus, Minus, Trash2, X, ShoppingCart, Menu } from 'lucide-react';
+import { 
+  Loader2, Plus, Minus, Trash2, X, ShoppingCart, Menu,
+  Pill, Heart, Thermometer, Baby, Leaf, Sparkles, Search, ChevronRight
+} from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -47,6 +50,17 @@ export function ClientDashboard() {
   const [activeTab, setActiveTab] = useState<'browse' | 'orders'>('browse');
   const [checkoutFeedback, setCheckoutFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Categorias populares para exibir
+  const popularCategories = [
+    { name: 'Analgésicos', icon: Pill, color: 'bg-blue-100 text-blue-600' },
+    { name: 'Vitaminas', icon: Leaf, color: 'bg-green-100 text-green-600' },
+    { name: 'Antibióticos', icon: Thermometer, color: 'bg-red-100 text-red-600' },
+    { name: 'Contraceptivos', icon: Baby, color: 'bg-pink-100 text-pink-600' },
+    { name: 'Gripes e Resfriados', icon: Heart, color: 'bg-purple-100 text-purple-600' },
+    { name: 'Dermatológicos', icon: Sparkles, color: 'bg-amber-100 text-amber-600' },
+  ];
 
   // Carregar carrinho do localStorage
   useEffect(() => {
@@ -82,10 +96,12 @@ export function ClientDashboard() {
     if (node) observerRef.current.observe(node);
   }, [loadingMeds, isLoadingMore, hasMore, loadMore, searchTerm]);
 
-  const filteredMedications = medications.filter(
-    (m) => m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           m.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMedications = medications.filter((m) => {
+    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          m.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !selectedCategory || m.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleAddToCart = (medicationId: string) => {
     setCart((prev) => ({
@@ -197,15 +213,92 @@ export function ClientDashboard() {
             </div>
 
             {activeTab === 'browse' && (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+              <div className="space-y-5 sm:space-y-6">
+                {/* Barra de Busca Melhorada */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     placeholder="Buscar medicamentos..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:max-w-md"
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      if (e.target.value) setSelectedCategory(null);
+                    }}
+                    className="w-full pl-10 h-12 text-base rounded-xl border-2 focus:border-primary"
                   />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                </div>
+
+                {/* Banner de Ofertas Especiais */}
+                {!searchTerm && !selectedCategory && (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#2D1B4E] to-[#4a3070] p-4 sm:p-6">
+                    <div className="relative z-10">
+                      <p className="text-white/70 text-xs sm:text-sm mb-1">Ofertas Especiais</p>
+                      <h3 className="text-white text-lg sm:text-2xl font-bold mb-1">Economize até</h3>
+                      <div className="flex items-baseline gap-1 mb-3">
+                        <span className="text-3xl sm:text-5xl font-bold text-primary">20</span>
+                        <span className="text-xl sm:text-2xl font-bold text-primary">%</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="bg-primary hover:bg-primary/90 text-sm"
+                        onClick={() => setSearchTerm('vitaminas')}
+                      >
+                        Ver ofertas
+                      </Button>
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-20">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <Pill className="h-24 w-24 sm:h-32 sm:w-32 text-white rotate-12" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Seção de Categorias */}
+                {!searchTerm && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-base sm:text-lg">Categorias</h3>
+                      <button 
+                        className="text-xs sm:text-sm text-primary flex items-center gap-1 hover:underline"
+                        onClick={() => setSelectedCategory(null)}
+                      >
+                        Ver todas <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {popularCategories.map((cat) => {
+                        const Icon = cat.icon;
+                        const isSelected = selectedCategory === cat.name;
+                        return (
+                          <button
+                            key={cat.name}
+                            onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
+                            className={`flex flex-col items-center p-3 sm:p-4 rounded-xl transition active:scale-95 ${
+                              isSelected 
+                                ? 'bg-primary/10 ring-2 ring-primary' 
+                                : 'bg-card hover:bg-muted border'
+                            }`}
+                          >
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${cat.color} flex items-center justify-center mb-2`}>
+                              <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                            </div>
+                            <span className="text-[10px] sm:text-xs font-medium text-center leading-tight line-clamp-2">
+                              {cat.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Título da Seção de Produtos */}
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-base sm:text-lg">
+                    {selectedCategory || 'Todos os Produtos'}
+                  </h3>
+                  <span className="text-xs sm:text-sm text-muted-foreground">
                     {filteredMedications.length} produtos
                   </span>
                 </div>
