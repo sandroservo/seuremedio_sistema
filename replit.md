@@ -54,13 +54,21 @@ The platform integrates with Asaas payment gateway for processing PIX and Boleto
 
 ### Payment Flow
 
-1. Customer selects payment method (PIX, Boleto, or Cash on Delivery)
+1. Customer selects payment method (PIX, Credit Card, or Cash on Delivery)
 2. Order is created with status `PENDING` and `paymentStatus = PENDING`
-3. For online payments, Asaas webhook updates `paymentStatus` to `CONFIRMED` when payment is received
-4. Admin can only approve orders (change to `CONFIRMED`) when:
-   - `paymentStatus = CONFIRMED` for online payments, OR
-   - No `paymentId` exists (cash on delivery)
+3. Payment confirmation:
+   - **Online payments (PIX, Credit Card)**: Asaas webhook updates `paymentStatus` to `CONFIRMED` automatically
+   - **Cash payments**: Admin manually confirms payment via "Confirmar Pagamento" button
+4. Admin can only approve orders (change status to `CONFIRMED`) when `paymentStatus = CONFIRMED`
 5. Order follows state machine: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
+
+### Cash Payment Approval Process
+
+For orders with cash payment method:
+1. Order appears in admin dashboard with amber "Pagamento em dinheiro" banner
+2. Admin clicks "Confirmar Pagamento" button after receiving cash
+3. System updates `paymentStatus` to `CONFIRMED`
+4. Admin can then click "Aprovar Pedido" to proceed with the order
 
 ### Key Payment Files
 
@@ -68,6 +76,7 @@ The platform integrates with Asaas payment gateway for processing PIX and Boleto
 - `app/api/payments/route.ts` - Payment creation API
 - `app/api/webhooks/asaas/route.ts` - Webhook to receive payment confirmations
 - `app/api/orders/[id]/route.ts` - Order status updates with payment validation
+- `app/api/orders/[id]/confirm-payment/route.ts` - Admin endpoint to confirm cash payments
 
 ### Webhook URL
 
