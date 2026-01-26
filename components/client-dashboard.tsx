@@ -308,12 +308,14 @@ export function ClientDashboard() {
                                   Ver Agora
                                 </Button>
                               </div>
-                              <div className="w-32 sm:w-48 relative">
-                                <img 
-                                  src={slide.image} 
-                                  alt={slide.title}
-                                  className="absolute inset-0 w-full h-full object-cover object-center rounded-r-2xl"
-                                />
+                              <div className="w-32 sm:w-48 relative flex items-center justify-center p-2 sm:p-3">
+                                <div className="w-full h-24 sm:h-32 rounded-2xl overflow-hidden shadow-lg">
+                                  <img 
+                                    src={slide.image} 
+                                    alt={slide.title}
+                                    className="w-full h-full object-cover object-center"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
