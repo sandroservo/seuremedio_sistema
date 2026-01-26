@@ -45,7 +45,7 @@ interface CartItem {
   quantity: number;
 }
 
-type PaymentMethod = 'pix' | 'credit' | 'debit' | 'cash';
+type PaymentMethod = 'pix' | 'credit' | 'cash';
 
 const DELIVERY_FEE = 5.99;
 
@@ -151,7 +151,7 @@ export default function CheckoutPage() {
   };
 
   const handlePaymentSubmit = () => {
-    if (paymentMethod === 'credit' || paymentMethod === 'debit') {
+    if (paymentMethod === 'credit') {
       if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
         setError('Preencha os dados do cartão');
         return;
@@ -507,7 +507,6 @@ export default function CheckoutPage() {
                     {[
                       { key: 'pix', label: 'PIX', icon: QrCode, desc: 'Aprovação imediata' },
                       { key: 'credit', label: 'Crédito', icon: CreditCard, desc: 'Até 12x' },
-                      { key: 'debit', label: 'Débito', icon: CreditCard, desc: 'À vista' },
                       { key: 'cash', label: 'Dinheiro', icon: Banknote, desc: 'Na entrega' },
                     ].map((method) => {
                       const Icon = method.icon;
@@ -529,7 +528,7 @@ export default function CheckoutPage() {
                     })}
                   </div>
 
-                  {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
+                  {paymentMethod === 'credit' && (
                     <div className="space-y-4 pt-4 border-t">
                       {asaasConfigured && (
                         <div>
@@ -693,8 +692,7 @@ export default function CheckoutPage() {
                         <p className="text-sm text-muted-foreground">
                           {paymentMethod === 'pix' && 'PIX - Aprovação imediata'}
                           {paymentMethod === 'credit' && `Cartão de crédito final ${cardData.number.slice(-4)}`}
-                          {paymentMethod === 'debit' && `Cartão de débito final ${cardData.number.slice(-4)}`}
-                          {paymentMethod === 'cash' && 'Dinheiro na entrega'}
+                                                    {paymentMethod === 'cash' && 'Dinheiro na entrega'}
                         </p>
                       </div>
                     </div>
