@@ -230,25 +230,33 @@ export function ClientDashboard() {
 
                 {/* Banner de Ofertas Especiais */}
                 {!searchTerm && !selectedCategory && (
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#2D1B4E] to-[#4a3070] p-4 sm:p-6">
-                    <div className="relative z-10">
-                      <p className="text-white/70 text-xs sm:text-sm mb-1">Ofertas Especiais</p>
-                      <h3 className="text-white text-lg sm:text-2xl font-bold mb-1">Economize até</h3>
-                      <div className="flex items-baseline gap-1 mb-3">
-                        <span className="text-3xl sm:text-5xl font-bold text-primary">20</span>
-                        <span className="text-xl sm:text-2xl font-bold text-primary">%</span>
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                    <div className="flex">
+                      <div className="flex-1 p-4 sm:p-6">
+                        <p className="text-muted-foreground text-xs sm:text-sm mb-1">Ofertas em Medicamentos</p>
+                        <h3 className="text-foreground text-lg sm:text-xl font-bold mb-2">
+                          Aproveite a Oferta
+                        </h3>
+                        <div className="flex items-baseline gap-1 mb-3">
+                          <span className="text-xs sm:text-sm text-muted-foreground">Até</span>
+                          <span className="text-3xl sm:text-4xl font-bold text-primary">20</span>
+                          <span className="text-lg sm:text-xl font-bold text-primary">%</span>
+                          <span className="text-xs sm:text-sm text-muted-foreground ml-1">OFF</span>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs sm:text-sm rounded-full px-4"
+                          onClick={() => setSelectedCategory('Vitaminas')}
+                        >
+                          Ver Agora
+                        </Button>
                       </div>
-                      <Button 
-                        size="sm" 
-                        className="bg-primary hover:bg-primary/90 text-sm"
-                        onClick={() => setSearchTerm('vitaminas')}
-                      >
-                        Ver ofertas
-                      </Button>
-                    </div>
-                    <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-20">
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <Pill className="h-24 w-24 sm:h-32 sm:w-32 text-white rotate-12" />
+                      <div className="w-32 sm:w-48 relative">
+                        <img 
+                          src="/images/banner-farmacia.png" 
+                          alt="Ofertas em medicamentos"
+                          className="absolute inset-0 w-full h-full object-cover object-center"
+                        />
                       </div>
                     </div>
                   </div>
