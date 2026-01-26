@@ -283,40 +283,37 @@ export function ClientDashboard() {
                             className={`w-full flex-shrink-0 bg-gradient-to-r ${slide.bgColor} border ${slide.borderColor} rounded-2xl`}
                           >
                             <div className="flex">
-                              {/* Imagem circular à esquerda */}
-                              <div className="w-24 sm:w-36 flex items-center justify-center p-3 sm:p-4">
-                                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                                  <img 
-                                    src={slide.image} 
-                                    alt={slide.title}
-                                    className="w-full h-full object-cover object-center"
-                                  />
-                                </div>
-                              </div>
-                              {/* Conteúdo à direita */}
-                              <div className="flex-1 p-3 sm:p-5 pl-0">
-                                <p className="text-muted-foreground text-xs sm:text-sm mb-0.5">{slide.subtitle}</p>
-                                <h3 className="text-foreground text-base sm:text-xl font-bold mb-1">
+                              <div className="flex-1 p-4 sm:p-6">
+                                <p className="text-muted-foreground text-xs sm:text-sm mb-1">{slide.subtitle}</p>
+                                <h3 className="text-foreground text-lg sm:text-xl font-bold mb-2">
                                   {slide.title}
                                 </h3>
-                                <div className="flex items-baseline gap-1 mb-2">
+                                <div className="flex items-baseline gap-1 mb-3">
                                   {slide.discount !== 'Grátis' ? (
                                     <>
-                                      <span className="text-xs text-muted-foreground">Até</span>
-                                      <span className="text-2xl sm:text-3xl font-bold text-primary">{slide.discount}</span>
-                                      <span className="text-base sm:text-lg font-bold text-primary">%</span>
+                                      <span className="text-xs sm:text-sm text-muted-foreground">Até</span>
+                                      <span className="text-3xl sm:text-4xl font-bold text-primary">{slide.discount}</span>
+                                      <span className="text-lg sm:text-xl font-bold text-primary">%</span>
+                                      <span className="text-xs sm:text-sm text-muted-foreground ml-1">OFF</span>
                                     </>
                                   ) : (
-                                    <span className="text-2xl sm:text-3xl font-bold text-primary">{slide.discount}</span>
+                                    <span className="text-3xl sm:text-4xl font-bold text-primary">{slide.discount}</span>
                                   )}
                                 </div>
                                 <Button 
                                   size="sm" 
-                                  className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs rounded-full px-3 h-8"
+                                  className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs sm:text-sm rounded-full px-4"
                                   onClick={slide.action}
                                 >
                                   Ver Agora
                                 </Button>
+                              </div>
+                              <div className="w-32 sm:w-48 relative">
+                                <img 
+                                  src={slide.image} 
+                                  alt={slide.title}
+                                  className="absolute inset-0 w-full h-full object-cover object-center rounded-r-2xl"
+                                />
                               </div>
                             </div>
                           </div>
