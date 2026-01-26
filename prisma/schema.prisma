@@ -59,25 +59,46 @@ model User {
   @@index([role])
 }
 
+// Modelo de Categoria
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  medications Medication[]
+
+  @@index([name])
+  @@index([active])
+}
+
 // Modelo de Medicamento
 model Medication {
-  id                   String   @id @default(cuid())
-  name                 String   @unique
+  id                   String    @id @default(cuid())
+  name                 String    @unique
   description          String
-  price                Decimal  @db.Decimal(10, 2)
+  price                Decimal   @db.Decimal(10, 2)
   category             String
-  requiresPrescription Boolean  @default(false)
-  stock                Int      @default(0)
+  categoryId           String?
+  requiresPrescription Boolean   @default(false)
+  stock                Int       @default(0)
   image                String?
-  active               Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  active               Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relacionamentos
-  orderItems OrderItem[]
+  orderItems   OrderItem[]
+  categoryRef  Category?   @relation(fields: [categoryId], references: [id])
 
   @@index([name])
   @@index([category])
+  @@index([categoryId])
 }
 
 // Enum de Status de Pagamento
