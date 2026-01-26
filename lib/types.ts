@@ -22,6 +22,8 @@ export interface Medication {
   createdAt: Date;
 }
 
+export type PaymentStatus = 'PENDING' | 'CONFIRMED' | 'OVERDUE' | 'REFUNDED' | 'CANCELLED';
+
 export interface Order {
   id: string;
   clientId: string;
@@ -30,6 +32,10 @@ export interface Order {
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   deliveryId?: string;
   shippingAddress: string;
+  paymentId?: string;
+  paymentMethod?: string;
+  paymentStatus?: PaymentStatus;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
   // Relacionamentos incluídos pela API

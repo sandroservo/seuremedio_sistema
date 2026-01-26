@@ -416,14 +416,30 @@ export function AdminDashboard() {
                   cancelled: 'bg-red-100 text-red-800',
                 };
                 const statusLabels: Record<string, string> = {
-                  pending: 'Aguardando Aprovação',
+                  pending: 'Aguardando Pagamento',
                   confirmed: 'Confirmado',
                   processing: 'Em Preparação',
                   shipped: 'Saiu para Entrega',
                   delivered: 'Entregue',
                   cancelled: 'Cancelado',
                 };
+                const paymentStatusColors: Record<string, string> = {
+                  PENDING: 'bg-amber-100 text-amber-800',
+                  CONFIRMED: 'bg-green-100 text-green-800',
+                  OVERDUE: 'bg-red-100 text-red-800',
+                  REFUNDED: 'bg-gray-100 text-gray-800',
+                  CANCELLED: 'bg-red-100 text-red-800',
+                };
+                const paymentStatusLabels: Record<string, string> = {
+                  PENDING: '💳 Aguardando Pagamento',
+                  CONFIRMED: '✅ Pago',
+                  OVERDUE: '⚠️ Vencido',
+                  REFUNDED: '↩️ Reembolsado',
+                  CANCELLED: '❌ Cancelado',
+                };
                 const status = order.status.toLowerCase();
+                const paymentStatus = order.paymentStatus || 'PENDING';
+                const isPaymentConfirmed = paymentStatus === 'CONFIRMED';
 
                 return (
                   <Card key={order.id} className="overflow-hidden">
@@ -433,11 +449,17 @@ export function AdminDashboard() {
                           <CardTitle className="text-base">Pedido #{order.id.slice(0, 8).toUpperCase()}</CardTitle>
                           <CardDescription>
                             {new Date(order.createdAt).toLocaleString('pt-BR')} • Cliente: {order.client?.name || 'N/A'}
+                            {order.paymentMethod && ` • ${order.paymentMethod}`}
                           </CardDescription>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100'}`}>
-                          {statusLabels[status] || status}
-                        </span>
+                        <div className="flex gap-2 flex-wrap">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${paymentStatusColors[paymentStatus] || 'bg-gray-100'}`}>
+                            {paymentStatusLabels[paymentStatus] || paymentStatus}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100'}`}>
+                            {statusLabels[status] || status}
+                          </span>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-4">
@@ -460,24 +482,32 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t">
                         <span className="text-lg font-bold">Total: R$ {Number(order.totalPrice).toFixed(2)}</span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                           {status === 'pending' && (
                             <>
+                              {!isPaymentConfirmed && (
+                                <span className="text-sm text-amber-600 flex items-center gap-1">
+                                  <span className="animate-pulse">⏳</span>
+                                  Aguardando confirmação de pagamento
+                                </span>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="text-red-600 hover:bg-red-50"
                                 onClick={() => handleStatusChange(order.id, 'cancelled')}
                               >
-                                Recusar
+                                Cancelar
                               </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleStatusChange(order.id, 'confirmed')}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Aprovar
-                              </Button>
+                              {isPaymentConfirmed && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleStatusChange(order.id, 'confirmed')}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Aprovar Pedido
+                                </Button>
+                              )}
                             </>
                           )}
                           {status === 'confirmed' && (
