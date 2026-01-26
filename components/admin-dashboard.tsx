@@ -416,7 +416,7 @@ export function AdminDashboard() {
                   cancelled: 'bg-red-100 text-red-800',
                 };
                 const statusLabels: Record<string, string> = {
-                  pending: 'Aguardando Pagamento',
+                  pending: 'Pendente',
                   confirmed: 'Confirmado',
                   processing: 'Em Preparação',
                   shipped: 'Saiu para Entrega',
@@ -485,12 +485,6 @@ export function AdminDashboard() {
                         <div className="flex gap-2 items-center">
                           {status === 'pending' && (
                             <>
-                              {!isPaymentConfirmed && (
-                                <span className="text-sm text-amber-600 flex items-center gap-1">
-                                  <span className="animate-pulse">⏳</span>
-                                  Aguardando confirmação de pagamento
-                                </span>
-                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
