@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { geocodeAddress } from '@/lib/geocoding'
 
 // GET /api/deliveries - Lista entregas
 export async function GET(request: NextRequest) {
@@ -121,20 +122,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Pedido liberado para entrega' }, { status: 200 })
     }
 
+    // Geocodifica o endereço do cliente
+    let customerLatitude: number | null = null;
+    let customerLongitude: number | null = null;
+    
+    if (order.shippingAddress) {
+      const coords = await geocodeAddress(order.shippingAddress);
+      if (coords) {
+        customerLatitude = coords.latitude;
+        customerLongitude = coords.longitude;
+        console.log(`[Geocoding] Endereço: ${order.shippingAddress} -> Lat: ${customerLatitude}, Lng: ${customerLongitude}`);
+      } else {
+        console.log(`[Geocoding] Não foi possível geocodificar: ${order.shippingAddress}`);
+      }
+    }
+
     // Com deliveryPersonId, cria/atualiza a tarefa de entrega
-    const delivery = await prisma.$transaction(async (tx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const delivery = await prisma.$transaction(async (tx: any) => {
       // Verifica se já existe tarefa
       const existingTask = await tx.deliveryTask.findUnique({
         where: { orderId },
       })
 
       if (existingTask) {
-        // Atualiza tarefa existente com entregador
+        // Atualiza tarefa existente com entregador e coordenadas
         return tx.deliveryTask.update({
           where: { orderId },
           data: {
             deliveryPersonId,
             status: 'IN_PROGRESS',
+            customerLatitude: customerLatitude ?? existingTask.customerLatitude,
+            customerLongitude: customerLongitude ?? existingTask.customerLongitude,
             estimatedDeliveryTime: estimatedDeliveryTime
               ? new Date(estimatedDeliveryTime)
               : new Date(Date.now() + 60 * 60 * 1000), // 1 hora
@@ -148,12 +167,14 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Cria nova tarefa de entrega
+      // Cria nova tarefa de entrega com coordenadas
       return tx.deliveryTask.create({
         data: {
           orderId,
           deliveryPersonId,
           customerAddress: order.shippingAddress,
+          customerLatitude,
+          customerLongitude,
           status: 'IN_PROGRESS',
           estimatedDeliveryTime: estimatedDeliveryTime
             ? new Date(estimatedDeliveryTime)
