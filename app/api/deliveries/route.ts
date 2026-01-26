@@ -30,7 +30,15 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         include: {
           order: {
-            include: {
+            select: {
+              id: true,
+              totalPrice: true,
+              status: true,
+              shippingAddress: true,
+              notes: true,
+              paymentMethod: true,
+              paymentStatus: true,
+              createdAt: true,
               client: {
                 select: { id: true, name: true, phone: true },
               },

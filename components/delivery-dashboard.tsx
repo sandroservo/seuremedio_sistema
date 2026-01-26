@@ -126,6 +126,39 @@ export function DeliveryDashboard() {
         title: 'Erro',
         message: 'Não foi possível concluir a entrega. Tente novamente.',
       });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleConfirmCashAndDeliver = async (orderId: string) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/confirm-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erro ao confirmar pagamento');
+      }
+
+      await refetchDeliveries();
+      await refetchOrders();
+      
+      setFeedback({
+        type: 'success',
+        title: 'Entrega concluída!',
+        message: 'Pagamento em dinheiro confirmado e entrega finalizada.',
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Erro',
+        message: err?.message || 'Não foi possível confirmar o pagamento.',
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -246,22 +279,44 @@ export function DeliveryDashboard() {
                           </div>
                         )}
                         {delivery.order && (
-                          <p className="text-lg font-bold text-primary">
-                            R$ {Number(delivery.order.totalPrice).toFixed(2)}
-                          </p>
+                          <>
+                            <p className="text-lg font-bold text-primary">
+                              R$ {Number(delivery.order.totalPrice).toFixed(2)}
+                            </p>
+                            {delivery.order.paymentMethod === 'cash' && delivery.order.paymentStatus !== 'CONFIRMED' && (
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 flex items-center gap-2">
+                                <span className="text-amber-600">💵</span>
+                                <span className="text-sm text-amber-800 font-medium">Aguardando Pagamento em Dinheiro</span>
+                              </div>
+                            )}
+                          </>
                         )}
                         {status === 'in_progress' && (
-                          <Button
-                            onClick={() => handleCompleteDelivery(delivery.id, delivery.orderId)}
-                            className="w-full"
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? (
-                              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
-                            ) : (
-                              <><Check className="h-4 w-4 mr-2" /> Marcar como Entregue</>
-                            )}
-                          </Button>
+                          delivery.order?.paymentMethod === 'cash' && delivery.order?.paymentStatus !== 'CONFIRMED' ? (
+                            <Button
+                              onClick={() => handleConfirmCashAndDeliver(delivery.orderId)}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
+                              ) : (
+                                <>💵 Receber Dinheiro e Finalizar</>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => handleCompleteDelivery(delivery.id, delivery.orderId)}
+                              className="w-full"
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processando...</>
+                              ) : (
+                                <><Check className="h-4 w-4 mr-2" /> Marcar como Entregue</>
+                              )}
+                            </Button>
+                          )
                         )}
                       </CardContent>
                     </Card>

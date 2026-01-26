@@ -914,8 +914,7 @@ export function AdminDashboard() {
                 const paymentStatus = order.paymentStatus || 'PENDING';
                 const isPaymentConfirmed = paymentStatus === 'CONFIRMED';
                 const isCashPayment = order.paymentMethod === 'cash';
-                const needsCashConfirmation = isCashPayment && !isPaymentConfirmed && status === 'pending';
-
+                
                 const paymentMethodLabels: Record<string, string> = {
                   pix: 'PIX',
                   credit_card: 'Cartão de Crédito',
@@ -944,12 +943,16 @@ export function AdminDashboard() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-4">
-                      {needsCashConfirmation && (
+                      {isCashPayment && !isPaymentConfirmed && (
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
                           <span className="text-amber-600 text-xl">💵</span>
                           <div>
                             <p className="text-sm font-medium text-amber-800">Pagamento em dinheiro</p>
-                            <p className="text-xs text-amber-600">Aguardando confirmação do recebimento para liberar o pedido</p>
+                            <p className="text-xs text-amber-600">
+                              {status === 'pending' 
+                                ? 'O pagamento será confirmado pelo entregador na entrega'
+                                : 'Aguardando o entregador receber o pagamento'}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -983,17 +986,7 @@ export function AdminDashboard() {
                               >
                                 Cancelar
                               </Button>
-                              {needsCashConfirmation && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-green-600 hover:bg-green-50 border-green-200"
-                                  onClick={() => handleConfirmCashPayment(order.id)}
-                                >
-                                  💵 Confirmar Pagamento
-                                </Button>
-                              )}
-                              {isPaymentConfirmed && (
+                              {(isPaymentConfirmed || isCashPayment) && (
                                 <Button
                                   size="sm"
                                   onClick={() => handleStatusChange(order.id, 'confirmed')}

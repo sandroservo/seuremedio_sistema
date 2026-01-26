@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     // Busca o pedido atual para validações
     const currentOrder = await prisma.order.findUnique({
       where: { id },
-      select: { status: true, paymentStatus: true, paymentId: true },
+      select: { status: true, paymentStatus: true, paymentId: true, paymentMethod: true },
     })
 
     if (!currentOrder) {
@@ -98,12 +98,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
         )
       }
 
-      // Validação: todos os pedidos precisam de confirmação de pagamento
-      // antes de avançar para qualquer estado de aprovação/fulfillment
+      // Validação: pedidos com pagamento online precisam de confirmação
+      // Pedidos em dinheiro podem ser aprovados sem confirmação prévia
       if (currentStatus === 'PENDING' && STATES_REQUIRING_PAYMENT.includes(newStatus)) {
         const paymentConfirmed = currentOrder.paymentStatus === 'CONFIRMED'
+        const isCashPayment = currentOrder.paymentMethod === 'cash'
         
-        if (!paymentConfirmed) {
+        // Só bloqueia se NÃO for pagamento em dinheiro E pagamento não estiver confirmado
+        if (!isCashPayment && !paymentConfirmed) {
           return NextResponse.json(
             { error: 'Não é possível aprovar o pedido. O pagamento ainda não foi confirmado.' },
             { status: 400 }

@@ -1,7 +1,7 @@
 /**
  * Autor: Sandro Servo
  * Site: https://cloudservo.com.br
- * API Route - Confirmar pagamento em dinheiro
+ * API Route - Confirmar pagamento em dinheiro (para entregadores e admin)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,10 +11,10 @@ import prisma from '@/lib/prisma'
 
 type Params = { params: Promise<{ id: string }> }
 
-// POST /api/orders/[id]/confirm-payment - Confirma pagamento em dinheiro
+// POST /api/orders/[id]/confirm-payment - Confirma pagamento em dinheiro e finaliza entrega
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    // Verificar autenticação e permissão de admin
+    // Verificar autenticação
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
@@ -24,9 +24,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       )
     }
 
-    if (session.user.role !== 'ADMIN') {
+    // Apenas ADMIN ou DELIVERY podem confirmar pagamentos em dinheiro
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'DELIVERY') {
       return NextResponse.json(
-        { error: 'Apenas administradores podem confirmar pagamentos' },
+        { error: 'Apenas administradores ou entregadores podem confirmar pagamentos' },
         { status: 403 }
       )
     }
@@ -39,7 +40,14 @@ export async function POST(request: NextRequest, { params }: Params) {
         id: true, 
         paymentMethod: true, 
         paymentStatus: true,
-        status: true 
+        status: true,
+        deliveryTask: {
+          select: {
+            id: true,
+            deliveryPersonId: true,
+            status: true,
+          }
+        }
       },
     })
 
@@ -57,11 +65,39 @@ export async function POST(request: NextRequest, { params }: Params) {
       )
     }
 
-    if (order.status !== 'PENDING') {
-      return NextResponse.json(
-        { error: 'Só é possível confirmar pagamento de pedidos pendentes' },
-        { status: 400 }
-      )
+    // Se for entregador, verificar se é o entregador deste pedido e se o pedido está em entrega
+    if (session.user.role === 'DELIVERY') {
+      if (!order.deliveryTask) {
+        return NextResponse.json(
+          { error: 'Este pedido ainda não foi atribuído para entrega' },
+          { status: 400 }
+        )
+      }
+      
+      if (order.deliveryTask.deliveryPersonId !== session.user.id) {
+        return NextResponse.json(
+          { error: 'Você não é o entregador deste pedido' },
+          { status: 403 }
+        )
+      }
+
+      // Entregador só pode confirmar se o pedido está SHIPPED (em entrega)
+      if (order.status !== 'SHIPPED') {
+        return NextResponse.json(
+          { error: 'Só é possível confirmar pagamento de pedidos em entrega' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Admin não pode confirmar pedidos cancelados ou já entregues
+    if (session.user.role === 'ADMIN') {
+      if (order.status === 'CANCELLED' || order.status === 'DELIVERED') {
+        return NextResponse.json(
+          { error: 'Não é possível confirmar pagamento de pedidos cancelados ou já entregues' },
+          { status: 400 }
+        )
+      }
     }
 
     if (order.paymentStatus === 'CONFIRMED') {
@@ -71,10 +107,12 @@ export async function POST(request: NextRequest, { params }: Params) {
       )
     }
 
+    // Atualiza o pedido: confirma pagamento e finaliza como entregue
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
         paymentStatus: 'CONFIRMED',
+        status: 'DELIVERED',
       },
       include: {
         client: {
@@ -86,8 +124,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
     })
 
+    // Atualiza a tarefa de entrega para DELIVERED
+    if (order.deliveryTask) {
+      await prisma.deliveryTask.update({
+        where: { id: order.deliveryTask.id },
+        data: {
+          status: 'DELIVERED',
+          deliveredAt: new Date(),
+        },
+      })
+    }
+
     return NextResponse.json({
-      message: 'Pagamento em dinheiro confirmado com sucesso',
+      message: 'Pagamento confirmado e entrega finalizada com sucesso',
       order: updatedOrder,
     })
   } catch (error) {
