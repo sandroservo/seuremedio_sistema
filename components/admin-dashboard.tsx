@@ -308,7 +308,7 @@ export function AdminDashboard() {
   const stats = {
     totalOrders: orders.length,
     pendingOrders: orders.filter((o) => o.status === 'pending').length,
-    totalRevenue: orders.reduce((sum, o) => sum + o.totalPrice, 0),
+    totalRevenue: orders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0),
     totalMeds: medications.length,
   };
 
