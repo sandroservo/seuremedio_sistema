@@ -244,6 +244,45 @@ export function AdminDashboard() {
     }
   };
 
+  // Upload de imagem do banner
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBanner(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload/banners', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        setFeedback({
+          type: 'error',
+          title: 'Falha no upload',
+          message: error.error || 'Erro ao fazer upload da imagem.',
+        });
+        return;
+      }
+
+      const { url } = await res.json();
+      setBannerForm((prev) => ({ ...prev, image: url }));
+    } catch {
+      setFeedback({
+        type: 'error',
+        title: 'Falha no upload',
+        message: 'Erro ao fazer upload da imagem. Tente novamente.',
+      });
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
   // Editar banner
   const handleEditBanner = (banner: Banner) => {
     setBannerForm({
@@ -1128,12 +1167,41 @@ export function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">URL da Imagem</label>
-                      <Input
-                        value={bannerForm.image}
-                        onChange={(e) => setBannerForm({ ...bannerForm, image: e.target.value })}
-                        placeholder="/images/banner.png"
-                      />
+                      <label className="text-sm font-medium">Imagem do Banner</label>
+                      <div className="flex items-center gap-3">
+                        {bannerForm.image ? (
+                          <div className="relative w-20 h-14 rounded overflow-hidden border">
+                            <img src={bannerForm.image} alt="Preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setBannerForm({ ...bannerForm, image: '' })}
+                              className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-20 h-14 rounded border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
+                          </div>
+                        )}
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleBannerImageUpload}
+                            disabled={isUploadingBanner}
+                          />
+                          <span className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-md hover:bg-muted transition">
+                            {isUploadingBanner ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                            ) : (
+                              <><Upload className="w-4 h-4" /> Enviar Imagem</>
+                            )}
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
