@@ -58,17 +58,21 @@ The platform integrates with Asaas payment gateway for processing PIX and Boleto
 2. Order is created with status `PENDING` and `paymentStatus = PENDING`
 3. Payment confirmation:
    - **Online payments (PIX, Credit Card)**: Asaas webhook updates `paymentStatus` to `CONFIRMED` automatically
-   - **Cash payments**: Admin manually confirms payment via "Confirmar Pagamento" button
-4. Admin can only approve orders (change status to `CONFIRMED`) when `paymentStatus = CONFIRMED`
+   - **Cash payments**: Payment is confirmed by delivery personnel at time of delivery
+4. Admin approves orders:
+   - For online payments: requires `paymentStatus = CONFIRMED`
+   - For cash payments: can approve without prior payment confirmation
 5. Order follows state machine: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
 
-### Cash Payment Approval Process
+### Cash Payment Flow
 
 For orders with cash payment method:
 1. Order appears in admin dashboard with amber "Pagamento em dinheiro" banner
-2. Admin clicks "Confirmar Pagamento" button after receiving cash
-3. System updates `paymentStatus` to `CONFIRMED`
-4. Admin can then click "Aprovar Pedido" to proceed with the order
+2. Admin approves order for delivery (no payment confirmation needed)
+3. Order is assigned to delivery personnel and status changes to SHIPPED
+4. Delivery person receives cash from customer
+5. Delivery person clicks "Receber Dinheiro e Finalizar" button in their dashboard
+6. System updates `paymentStatus` to `CONFIRMED` and order status to `DELIVERED`
 
 ### Key Payment Files
 
@@ -76,7 +80,7 @@ For orders with cash payment method:
 - `app/api/payments/route.ts` - Payment creation API
 - `app/api/webhooks/asaas/route.ts` - Webhook to receive payment confirmations
 - `app/api/orders/[id]/route.ts` - Order status updates with payment validation
-- `app/api/orders/[id]/confirm-payment/route.ts` - Admin endpoint to confirm cash payments
+- `app/api/orders/[id]/confirm-payment/route.ts` - Endpoint for delivery personnel to confirm cash payments
 
 ### Webhook URL
 
