@@ -52,14 +52,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Remove a senha do retorno e mapeia role para lowercase
+    // Remove a senha do retorno
     const { password: _, ...userWithoutPassword } = user
-    const mappedUser = {
-      ...userWithoutPassword,
-      role: user.role.toLowerCase() as 'admin' | 'client' | 'delivery',
-    }
 
-    return NextResponse.json(mappedUser)
+    return NextResponse.json(userWithoutPassword)
   } catch (error) {
     console.error('Erro no login:', error)
     return NextResponse.json(
