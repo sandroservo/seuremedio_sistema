@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ])
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       data: orders,
       pagination: {
         page,
@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     })
+    
+    // Desabilitar cache para sempre ter dados atualizados
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Erro ao buscar pedidos:', error)
     return NextResponse.json(
