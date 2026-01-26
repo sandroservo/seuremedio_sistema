@@ -1,0 +1,69 @@
+## Error Type
+Console Error
+
+## Error Message
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SegmentViewNode type="page" pagePath="client/das...">
+      <SegmentTrieNode>
+      <Page>
+        <ClientDashboard>
+          <div className="min-h-scre...">
+            <header>
+            <main>
+            <div className="lg:hidden ...">
+              <Sheet open={false} onOpenChange={function bound dispatchSetState}>
+                <Dialog data-slot="sheet" open={false} onOpenChange={function bound dispatchSetState}>
+                  <DialogProvider scope={undefined} triggerRef={{current:null}} contentRef={{current:null}} ...>
+                    <SheetTrigger asChild={true}>
+                      <DialogTrigger data-slot="sheet-trigger" asChild={true}>
+                        <Primitive.button type="button" aria-haspopup="dialog" aria-expanded={false} ...>
+                          <Slot type="button" aria-haspopup="dialog" aria-expanded={false} aria-controls="radix-_R_d..." ...>
+                            <SlotClone type="button" aria-haspopup="dialog" aria-expanded={false} ...>
+                              <Button size="lg" className="h-16 w-16 ..." type="button" aria-haspopup="dialog" ...>
+                                <button
+                                  data-slot="sheet-trigger"
+                                  className={"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm..."}
+                                  type="button"
+                                  aria-haspopup="dialog"
+                                  aria-expanded={false}
++                                 aria-controls="radix-_R_dbn5rkndlb_"
+-                                 aria-controls="radix-_R_1pbn5rkndlb_"
+                                  data-state="closed"
+                                  onClick={function handleEvent}
+                                  ref={function}
+                                >
+                    ...
+            ...
+    ...
+
+
+
+    at button (<anonymous>:null:null)
+    at Button (components/ui/button.tsx:52:5)
+    at ClientDashboard (components/client-dashboard.tsx:717:15)
+    at SheetTrigger (components/ui/sheet.tsx:16:10)
+    at ClientDashboard (components/client-dashboard.tsx:716:13)
+    at Page (app/client/dashboard/page.tsx:4:10)
+
+## Code Frame
+  50 |
+  51 |   return (
+> 52 |     <Comp
+     |     ^
+  53 |       data-slot="button"
+  54 |       className={cn(buttonVariants({ variant, size, className }))}
+  55 |       {...props}
+
+Next.js version: 16.1.4 (Turbopack)

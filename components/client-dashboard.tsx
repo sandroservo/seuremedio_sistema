@@ -50,6 +50,7 @@ export function ClientDashboard() {
   const [activeTab, setActiveTab] = useState<'browse' | 'orders'>('browse');
   const [checkoutFeedback, setCheckoutFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [bannerSlides, setBannerSlides] = useState<Array<{
@@ -73,6 +74,11 @@ export function ClientDashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+
+  // Marcar como montado (evita erro de hidratação)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Carregar banners da API
   useEffect(() => {
@@ -710,7 +716,7 @@ export function ClientDashboard() {
       </main>
 
       {/* Botão flutuante do carrinho - Mobile */}
-      {activeTab === 'browse' && (
+      {mounted && activeTab === 'browse' && (
         <div className="lg:hidden fixed bottom-6 right-6 z-50">
           <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
             <SheetTrigger asChild>
