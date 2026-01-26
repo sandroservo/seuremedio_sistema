@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''
+    const pharmacyId = searchParams.get('pharmacyId') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
         ],
       }),
       ...(category && { category }),
+      ...(pharmacyId && { pharmacyId }),
     }
 
     const [medications, total] = await Promise.all([
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, price, category, requiresPrescription, stock, image } = body
+    const { name, description, price, category, requiresPrescription, stock, image, pharmacyId } = body
 
     if (!name || price === undefined || !category) {
       return NextResponse.json(
@@ -78,6 +80,7 @@ export async function POST(request: NextRequest) {
         requiresPrescription: requiresPrescription || false,
         stock: stock || 0,
         image: image || null,
+        pharmacyId: pharmacyId || null,
       },
     })
 

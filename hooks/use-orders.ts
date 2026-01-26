@@ -24,7 +24,7 @@ interface UseOrdersReturn {
   changeStatus: (id: string, status: Order['status']) => Promise<Order | null>;
 }
 
-export function useOrders(clientId?: string): UseOrdersReturn {
+export function useOrders(clientId?: string, pharmacyId?: string): UseOrdersReturn {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export function useOrders(clientId?: string): UseOrdersReturn {
     setError(null);
     
     try {
-      const data = await fetchOrders(clientId);
+      const data = await fetchOrders(clientId, pharmacyId);
       setOrders(data);
     } catch (err) {
       console.warn('API indisponível, usando localStorage:', err);
@@ -46,7 +46,7 @@ export function useOrders(clientId?: string): UseOrdersReturn {
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [clientId]);
+  }, [clientId, pharmacyId]);
 
   useEffect(() => {
     loadOrders();

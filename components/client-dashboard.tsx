@@ -21,7 +21,7 @@ import {
 import { Logo } from '@/components/logo';
 import { 
   Loader2, Plus, Minus, Trash2, X, ShoppingCart, Menu,
-  Pill, Heart, Thermometer, Baby, Leaf, Sparkles, Search, ChevronRight
+  Pill, Heart, Thermometer, Baby, Leaf, Sparkles, Search, ChevronRight, Building2
 } from 'lucide-react';
 import {
   Sheet,
@@ -37,13 +37,16 @@ const CART_STORAGE_KEY = 'seuremedio_cart';
 export function ClientDashboard() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
+  const [pharmacies, setPharmacies] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+  
   const { 
     medications, 
     isLoading: loadingMeds, 
     isLoadingMore,
     hasMore,
     loadMore 
-  } = useMedications();
+  } = useMedications(false, selectedPharmacy || undefined);
   const { orders, isLoading: loadingOrders, addOrder, refetch: refetchOrders } = useOrders(user?.id);
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,6 +81,21 @@ export function ClientDashboard() {
   // Marcar como montado (evita erro de hidratação)
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Carregar farmácias disponíveis
+  useEffect(() => {
+    fetch('/api/pharmacies?active=true')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPharmacies(data);
+          if (data.length > 0 && !selectedPharmacy) {
+            setSelectedPharmacy(data[0].id);
+          }
+        }
+      })
+      .catch(console.error);
   }, []);
 
   // Carregar banners da API
@@ -182,7 +200,15 @@ export function ClientDashboard() {
     const savedCart = localStorage.getItem(CART_STORAGE_KEY);
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        const parsed = JSON.parse(savedCart);
+        if (parsed.items) {
+          setCart(parsed.items);
+          if (parsed.pharmacyId) {
+            setSelectedPharmacy(parsed.pharmacyId);
+          }
+        } else {
+          setCart(parsed);
+        }
       } catch {}
     }
   }, []);
@@ -190,11 +216,11 @@ export function ClientDashboard() {
   // Salvar carrinho no localStorage quando mudar
   useEffect(() => {
     if (Object.keys(cart).length > 0) {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items: cart, pharmacyId: selectedPharmacy }));
     } else {
       localStorage.removeItem(CART_STORAGE_KEY);
     }
-  }, [cart]);
+  }, [cart, selectedPharmacy]);
   
   // Ref para o observador de scroll infinito
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -329,6 +355,28 @@ export function ClientDashboard() {
 
             {activeTab === 'browse' && (
               <div className="space-y-5 sm:space-y-6">
+                {/* Seletor de Farmácia */}
+                {pharmacies.length > 1 && (
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                    <Building2 className="h-5 w-5 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-800">Farmácia:</span>
+                    <select
+                      value={selectedPharmacy || ''}
+                      onChange={(e) => {
+                        setSelectedPharmacy(e.target.value);
+                        setCart({});
+                      }}
+                      className="flex-1 bg-white border border-purple-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      {pharmacies.map((pharmacy) => (
+                        <option key={pharmacy.id} value={pharmacy.id}>
+                          {pharmacy.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Barra de Busca Melhorada */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

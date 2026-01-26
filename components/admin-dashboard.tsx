@@ -75,8 +75,9 @@ const CATEGORIES = [
 export function AdminDashboard() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { medications, isLoading: loadingMeds, isLoadingMore, hasMore, loadMore, addMedication, editMedication, removeMedication, refetch } = useMedications();
-  const { orders, isLoading: loadingOrders, changeStatus, refetch: refetchOrders } = useOrders();
+  const pharmacyId = user?.pharmacyId;
+  const { medications, isLoading: loadingMeds, isLoadingMore, hasMore, loadMore, addMedication, editMedication, removeMedication, refetch } = useMedications(false, pharmacyId);
+  const { orders, isLoading: loadingOrders, changeStatus, refetch: refetchOrders } = useOrders(undefined, pharmacyId);
   const { deliveries, isLoading: loadingDeliveries } = useDeliveries();
   const [activeTab, setActiveTab] = useState<'orders' | 'medications' | 'deliveries' | 'banners' | 'users' | 'categories' | 'settings'>('orders');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);

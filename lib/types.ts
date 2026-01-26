@@ -1,4 +1,4 @@
-export type UserRole = 'client' | 'admin' | 'delivery';
+export type UserRole = 'CLIENT' | 'ADMIN' | 'DELIVERY' | 'SUPER_ADMIN';
 
 export interface User {
   id: string;
@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   address?: string;
+  pharmacyId?: string;
   createdAt: Date;
 }
 

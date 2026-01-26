@@ -100,9 +100,13 @@ export async function deleteMedication(id: string): Promise<void> {
 
 // ============ PEDIDOS ============
 
-export async function fetchOrders(clientId?: string): Promise<Order[]> {
-  const url = clientId 
-    ? `${API_BASE}/orders?clientId=${clientId}` 
+export async function fetchOrders(clientId?: string, pharmacyId?: string): Promise<Order[]> {
+  const params = new URLSearchParams();
+  if (clientId) params.append('clientId', clientId);
+  if (pharmacyId) params.append('pharmacyId', pharmacyId);
+  
+  const url = params.toString() 
+    ? `${API_BASE}/orders?${params.toString()}` 
     : `${API_BASE}/orders`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Erro ao buscar pedidos');
