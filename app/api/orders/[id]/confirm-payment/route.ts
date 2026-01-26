@@ -15,22 +15,52 @@ type Params = { params: Promise<{ id: string }> }
 // POST /api/orders/[id]/confirm-payment - Confirma pagamento em dinheiro e finaliza entrega
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    // Verificar autenticação via token JWT (mais confiável em App Router)
+    // Obter dados do corpo da requisição
+    let body: { deliveryPersonId?: string } = {}
+    try {
+      body = await request.json()
+    } catch {
+      // Corpo vazio é permitido para admin
+    }
+
+    // Tentar autenticação via token JWT
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
     
-    if (!token) {
+    let userRole: string | undefined
+    let userId: string | undefined
+
+    if (token) {
+      userRole = token.role as string
+      userId = token.id as string
+    } else {
       // Fallback para getServerSession
       const session = await getServerSession(authOptions)
-      if (!session?.user) {
-        return NextResponse.json(
-          { error: 'Não autorizado' },
-          { status: 401 }
-        )
+      if (session?.user) {
+        userRole = session.user.role
+        userId = session.user.id
       }
     }
 
-    const userRole = token?.role as string
-    const userId = token?.id as string
+    // Se não conseguiu autenticar via sessão, usar deliveryPersonId do body
+    if (!userRole && body.deliveryPersonId) {
+      // Validar que o deliveryPersonId existe e é um entregador
+      const deliveryPerson = await prisma.user.findUnique({
+        where: { id: body.deliveryPersonId },
+        select: { id: true, role: true }
+      })
+      
+      if (deliveryPerson && deliveryPerson.role === 'DELIVERY') {
+        userRole = 'DELIVERY'
+        userId = deliveryPerson.id
+      }
+    }
+
+    if (!userRole || !userId) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
 
     // Apenas ADMIN ou DELIVERY podem confirmar pagamentos em dinheiro
     if (userRole !== 'ADMIN' && userRole !== 'DELIVERY') {

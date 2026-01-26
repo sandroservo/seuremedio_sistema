@@ -138,6 +138,8 @@ export function DeliveryDashboard() {
       const res = await fetch(`/api/orders/${orderId}/confirm-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ deliveryPersonId: user?.id }),
       });
 
       if (!res.ok) {

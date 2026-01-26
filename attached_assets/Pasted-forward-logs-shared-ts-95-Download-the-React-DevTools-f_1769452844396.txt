@@ -1,0 +1,24 @@
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [Vercel Web Analytics] Debug mode is enabled by default in development. No requests will be sent to the server.
+forward-logs-shared.ts:95 [Vercel Web Analytics] Running queued event pageview Object
+forward-logs-shared.ts:95 [Vercel Web Analytics] [pageview] https://56803db5-75d7-4afe-af26-c1c4b032e717-00-3lgmeg7eko5ib.spock.replit.dev/delivery/dashboard Object
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+Geolocation permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See <URL> for more information.
+forward-logs-shared.ts:95 [HMR] connected
+/api/orders/cmkvic33s0000nvo1bwy8ys0b/confirm-payment:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+delivery-dashboard.tsx:138  POST https://56803db5-75d7-4afe-af26-c1c4b032e717-00-3lgmeg7eko5ib.spock.replit.dev/api/orders/cmkvic33s0000nvo1bwy8ys0b/confirm-payment 401 (Unauthorized)
+handleConfirmCashAndDeliver @ delivery-dashboard.tsx:138
+onClick @ delivery-dashboard.tsx:297
+executeDispatch @ react-dom-client.development.js:20543
+runWithFiberInDEV @ react-dom-client.development.js:986
+processDispatchQueue @ react-dom-client.development.js:20593
+(anonymous) @ react-dom-client.development.js:21164
+batchedUpdates$1 @ react-dom-client.development.js:3377
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:20747
+dispatchEvent @ react-dom-client.development.js:25693
+dispatchDiscreteEvent @ react-dom-client.development.js:25661
