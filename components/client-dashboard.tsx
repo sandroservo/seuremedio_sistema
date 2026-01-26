@@ -61,6 +61,12 @@ export function ClientDashboard() {
     bgColor: string;
     borderColor: string;
   }>>([]);
+  const [categories, setCategories] = useState<Array<{
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+  }>>([]);
 
   // Carregar banners da API
   useEffect(() => {
@@ -127,15 +133,17 @@ export function ClientDashboard() {
     return () => clearInterval(interval);
   }, [searchTerm, selectedCategory, bannerSlides.length]);
 
-  // Categorias populares para exibir
-  const popularCategories = [
-    { name: 'Analgésicos', icon: Pill, color: 'bg-blue-100 text-blue-600' },
-    { name: 'Vitaminas', icon: Leaf, color: 'bg-green-100 text-green-600' },
-    { name: 'Antibióticos', icon: Thermometer, color: 'bg-red-100 text-red-600' },
-    { name: 'Contraceptivos', icon: Baby, color: 'bg-pink-100 text-pink-600' },
-    { name: 'Gripes e Resfriados', icon: Heart, color: 'bg-purple-100 text-purple-600' },
-    { name: 'Dermatológicos', icon: Sparkles, color: 'bg-amber-100 text-amber-600' },
-  ];
+  // Carregar categorias da API
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Carregar carrinho do localStorage
   useEffect(() => {
@@ -377,7 +385,7 @@ export function ClientDashboard() {
                 )}
 
                 {/* Seção de Categorias */}
-                {!searchTerm && (
+                {!searchTerm && categories.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-base sm:text-lg">Categorias</h3>
@@ -388,13 +396,12 @@ export function ClientDashboard() {
                         Ver todas <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {popularCategories.map((cat) => {
-                        const Icon = cat.icon;
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                      {categories.map((cat) => {
                         const isSelected = selectedCategory === cat.name;
                         return (
                           <button
-                            key={cat.name}
+                            key={cat.id}
                             onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
                             className={`flex flex-col items-center p-3 sm:p-4 rounded-xl transition active:scale-95 ${
                               isSelected 
@@ -402,8 +409,8 @@ export function ClientDashboard() {
                                 : 'bg-card hover:bg-muted border'
                             }`}
                           >
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${cat.color} flex items-center justify-center mb-2`}>
-                              <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${cat.color || 'bg-gray-100'} flex items-center justify-center mb-2`}>
+                              <span className="text-xl sm:text-2xl">{cat.icon || '💊'}</span>
                             </div>
                             <span className="text-[10px] sm:text-xs font-medium text-center leading-tight line-clamp-2">
                               {cat.name}
