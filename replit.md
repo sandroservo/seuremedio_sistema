@@ -78,3 +78,35 @@ Configure in Asaas dashboard: `https://[your-domain]/api/webhooks/asaas`
 Configure Asaas API key in Admin Dashboard → Settings:
 - `asaas_api_key` - Your Asaas API key
 - `asaas_environment` - `sandbox` or `production`
+
+## Banner Management
+
+Admins can manage the promotional slideshow banners displayed on the client dashboard.
+
+### Banner Model
+
+Each banner has:
+- `title` - Main title text
+- `subtitle` - Secondary text
+- `discount` - Discount value or special offer (e.g., "20" for 20% or "Grátis")
+- `bgColor` - Tailwind gradient class (e.g., "from-amber-50 to-orange-50")
+- `borderColor` - Tailwind border class (e.g., "border-amber-100")
+- `image` - URL to banner image
+- `active` - Whether the banner is visible
+- `order` - Display order (lower numbers appear first)
+
+### Admin Interface
+
+Access via Admin Dashboard → Banners tab to:
+- Create new banners
+- Edit existing banners
+- Toggle active/inactive status
+- Reorder banners
+- Delete banners
+
+### API Endpoints
+
+- `GET /api/banners` - Returns active banners (or all for admin with `?all=true`)
+- `POST /api/banners` - Create new banner (admin only)
+- `PUT /api/banners/[id]` - Update banner (admin only)
+- `DELETE /api/banners/[id]` - Delete banner (admin only)
