@@ -54,6 +54,25 @@ export default function CadastroPage() {
     setPhone(formatPhone(e.target.value));
   };
 
+  const formatName = (value: string) => {
+    const prepositions = ['de', 'da', 'do', 'dos', 'das', 'e'];
+    return value
+      .toLowerCase()
+      .split(' ')
+      .map((word, index) => {
+        if (word.length === 0) return '';
+        if (index > 0 && prepositions.includes(word)) {
+          return word;
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ');
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(formatName(e.target.value));
+  };
+
   useEffect(() => {
     fetch('/api/locations/states')
       .then(res => res.json())
@@ -153,7 +172,7 @@ export default function CadastroPage() {
                 type="text"
                 placeholder="Seu nome"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 disabled={isLoading}
               />
             </div>
