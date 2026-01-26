@@ -51,6 +51,47 @@ export function ClientDashboard() {
   const [checkoutFeedback, setCheckoutFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Slides do banner promocional
+  const bannerSlides = [
+    {
+      subtitle: 'Ofertas em Medicamentos',
+      title: 'Aproveite a Oferta',
+      discount: '20',
+      image: '/images/banner-farmacia.png',
+      action: () => setSelectedCategory('Vitaminas'),
+      bgColor: 'from-amber-50 to-orange-50',
+      borderColor: 'border-amber-200',
+    },
+    {
+      subtitle: 'Vitaminas e Suplementos',
+      title: 'Cuide da sua Saúde',
+      discount: '15',
+      image: '/images/banner-vitaminas.png',
+      action: () => setSelectedCategory('Vitaminas'),
+      bgColor: 'from-green-50 to-emerald-50',
+      borderColor: 'border-green-200',
+    },
+    {
+      subtitle: 'Entrega Rápida',
+      title: 'Receba em Casa',
+      discount: 'Grátis',
+      image: '/images/banner-entrega.png',
+      action: () => {},
+      bgColor: 'from-blue-50 to-cyan-50',
+      borderColor: 'border-blue-200',
+    },
+  ];
+
+  // Auto-rotate slides
+  useEffect(() => {
+    if (searchTerm || selectedCategory) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [searchTerm, selectedCategory, bannerSlides.length]);
 
   // Categorias populares para exibir
   const popularCategories = [
@@ -228,36 +269,70 @@ export function ClientDashboard() {
                   />
                 </div>
 
-                {/* Banner de Ofertas Especiais */}
+                {/* Banner Slideshow de Ofertas */}
                 {!searchTerm && !selectedCategory && (
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-                    <div className="flex">
-                      <div className="flex-1 p-4 sm:p-6">
-                        <p className="text-muted-foreground text-xs sm:text-sm mb-1">Ofertas em Medicamentos</p>
-                        <h3 className="text-foreground text-lg sm:text-xl font-bold mb-2">
-                          Aproveite a Oferta
-                        </h3>
-                        <div className="flex items-baseline gap-1 mb-3">
-                          <span className="text-xs sm:text-sm text-muted-foreground">Até</span>
-                          <span className="text-3xl sm:text-4xl font-bold text-primary">20</span>
-                          <span className="text-lg sm:text-xl font-bold text-primary">%</span>
-                          <span className="text-xs sm:text-sm text-muted-foreground ml-1">OFF</span>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs sm:text-sm rounded-full px-4"
-                          onClick={() => setSelectedCategory('Vitaminas')}
-                        >
-                          Ver Agora
-                        </Button>
+                  <div className="relative">
+                    <div className="overflow-hidden rounded-2xl">
+                      <div 
+                        className="flex transition-transform duration-500 ease-out"
+                        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                      >
+                        {bannerSlides.map((slide, index) => (
+                          <div 
+                            key={index}
+                            className={`w-full flex-shrink-0 bg-gradient-to-r ${slide.bgColor} border ${slide.borderColor} rounded-2xl`}
+                          >
+                            <div className="flex">
+                              <div className="flex-1 p-4 sm:p-6">
+                                <p className="text-muted-foreground text-xs sm:text-sm mb-1">{slide.subtitle}</p>
+                                <h3 className="text-foreground text-lg sm:text-xl font-bold mb-2">
+                                  {slide.title}
+                                </h3>
+                                <div className="flex items-baseline gap-1 mb-3">
+                                  {slide.discount !== 'Grátis' ? (
+                                    <>
+                                      <span className="text-xs sm:text-sm text-muted-foreground">Até</span>
+                                      <span className="text-3xl sm:text-4xl font-bold text-primary">{slide.discount}</span>
+                                      <span className="text-lg sm:text-xl font-bold text-primary">%</span>
+                                      <span className="text-xs sm:text-sm text-muted-foreground ml-1">OFF</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-3xl sm:text-4xl font-bold text-primary">{slide.discount}</span>
+                                  )}
+                                </div>
+                                <Button 
+                                  size="sm" 
+                                  className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs sm:text-sm rounded-full px-4"
+                                  onClick={slide.action}
+                                >
+                                  Ver Agora
+                                </Button>
+                              </div>
+                              <div className="w-32 sm:w-48 relative">
+                                <img 
+                                  src={slide.image} 
+                                  alt={slide.title}
+                                  className="absolute inset-0 w-full h-full object-cover object-center rounded-r-2xl"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="w-32 sm:w-48 relative">
-                        <img 
-                          src="/images/banner-farmacia.png" 
-                          alt="Ofertas em medicamentos"
-                          className="absolute inset-0 w-full h-full object-cover object-center"
+                    </div>
+                    {/* Indicadores do Slideshow */}
+                    <div className="flex justify-center gap-2 mt-3">
+                      {bannerSlides.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentSlide(index)}
+                          className={`h-2 rounded-full transition-all ${
+                            currentSlide === index 
+                              ? 'w-6 bg-primary' 
+                              : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                          }`}
                         />
-                      </div>
+                      ))}
                     </div>
                   </div>
                 )}
