@@ -52,41 +52,75 @@ export function ClientDashboard() {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [bannerSlides, setBannerSlides] = useState<Array<{
+    id: string;
+    subtitle: string;
+    title: string;
+    discount: string;
+    image: string | null;
+    bgColor: string;
+    borderColor: string;
+  }>>([]);
 
-  // Slides do banner promocional
-  const bannerSlides = [
-    {
-      subtitle: 'Ofertas em Medicamentos',
-      title: 'Aproveite a Oferta',
-      discount: '20',
-      image: '/images/banner-farmacia.png',
-      action: () => setSelectedCategory('Vitaminas'),
-      bgColor: 'from-amber-50 to-orange-50',
-      borderColor: 'border-amber-200',
-    },
-    {
-      subtitle: 'Vitaminas e Suplementos',
-      title: 'Cuide da sua Saúde',
-      discount: '15',
-      image: '/images/banner-vitaminas.png',
-      action: () => setSelectedCategory('Vitaminas'),
-      bgColor: 'from-green-50 to-emerald-50',
-      borderColor: 'border-green-200',
-    },
-    {
-      subtitle: 'Entrega Rápida',
-      title: 'Receba em Casa',
-      discount: 'Grátis',
-      image: '/images/banner-entrega.png',
-      action: () => {},
-      bgColor: 'from-blue-50 to-cyan-50',
-      borderColor: 'border-blue-200',
-    },
-  ];
+  // Carregar banners da API
+  useEffect(() => {
+    fetch('/api/banners')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBannerSlides(data);
+        } else {
+          // Fallback para banners padrão se não houver nenhum no banco
+          setBannerSlides([
+            {
+              id: 'default-1',
+              subtitle: 'Ofertas em Medicamentos',
+              title: 'Aproveite a Oferta',
+              discount: '20',
+              image: '/images/banner-farmacia.png',
+              bgColor: 'from-amber-50 to-orange-50',
+              borderColor: 'border-amber-200',
+            },
+            {
+              id: 'default-2',
+              subtitle: 'Vitaminas e Suplementos',
+              title: 'Cuide da sua Saúde',
+              discount: '15',
+              image: '/images/banner-vitaminas.png',
+              bgColor: 'from-green-50 to-emerald-50',
+              borderColor: 'border-green-200',
+            },
+            {
+              id: 'default-3',
+              subtitle: 'Entrega Rápida',
+              title: 'Receba em Casa',
+              discount: 'Grátis',
+              image: '/images/banner-entrega.png',
+              bgColor: 'from-blue-50 to-cyan-50',
+              borderColor: 'border-blue-200',
+            },
+          ]);
+        }
+      })
+      .catch(() => {
+        // Fallback em caso de erro
+        setBannerSlides([
+          {
+            id: 'default-1',
+            subtitle: 'Ofertas em Medicamentos',
+            title: 'Aproveite a Oferta',
+            discount: '20',
+            image: '/images/banner-farmacia.png',
+            bgColor: 'from-amber-50 to-orange-50',
+            borderColor: 'border-amber-200',
+          },
+        ]);
+      });
+  }, []);
 
   // Auto-rotate slides
   useEffect(() => {
-    if (searchTerm || selectedCategory) return;
+    if (searchTerm || selectedCategory || bannerSlides.length === 0) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
     }, 5000);
@@ -303,18 +337,23 @@ export function ClientDashboard() {
                                 <Button 
                                   size="sm" 
                                   className="bg-[#2D1B4E] hover:bg-[#3D2B5E] text-white text-xs sm:text-sm rounded-full px-4"
-                                  onClick={slide.action}
+                                  onClick={() => {
+                                    const productsSection = document.getElementById('products-section');
+                                    if (productsSection) productsSection.scrollIntoView({ behavior: 'smooth' });
+                                  }}
                                 >
                                   Ver Agora
                                 </Button>
                               </div>
-                              <div className="w-32 sm:w-48 relative">
-                                <img 
-                                  src={slide.image} 
-                                  alt={slide.title}
-                                  className="absolute inset-0 w-full h-full object-cover object-center rounded-l-2xl"
-                                />
-                              </div>
+                              {slide.image && (
+                                <div className="w-32 sm:w-48 relative">
+                                  <img 
+                                    src={slide.image} 
+                                    alt={slide.title}
+                                    className="absolute inset-0 w-full h-full object-cover object-center rounded-l-2xl"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -377,7 +416,7 @@ export function ClientDashboard() {
                 )}
 
                 {/* Título da Seção de Produtos */}
-                <div className="flex items-center justify-between">
+                <div id="products-section" className="flex items-center justify-between">
                   <h3 className="font-semibold text-base sm:text-lg">
                     {selectedCategory || 'Todos os Produtos'}
                   </h3>

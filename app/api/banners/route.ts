@@ -3,10 +3,15 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    const isAdmin = session?.user?.role === 'ADMIN'
+    const { searchParams } = new URL(request.url)
+    const includeInactive = searchParams.get('all') === 'true'
+    
     const banners = await prisma.banner.findMany({
-      where: { active: true },
+      where: isAdmin && includeInactive ? {} : { active: true },
       orderBy: { order: 'asc' }
     })
     return NextResponse.json(banners)

@@ -161,9 +161,9 @@ export function AdminDashboard() {
   const loadBanners = useCallback(async () => {
     setLoadingBanners(true);
     try {
-      const res = await fetch('/api/banners');
+      const res = await fetch('/api/banners?all=true');
       const data = await res.json();
-      setBanners(data);
+      setBanners(Array.isArray(data) ? data : []);
     } catch {
       console.error('Erro ao carregar banners');
     } finally {
