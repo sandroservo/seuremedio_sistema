@@ -24,7 +24,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    console.log('Banner POST - Session:', JSON.stringify(session, null, 2))
     if (!session || session.user.role !== 'ADMIN') {
+      console.log('Banner POST - Unauthorized. Role:', session?.user?.role)
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
