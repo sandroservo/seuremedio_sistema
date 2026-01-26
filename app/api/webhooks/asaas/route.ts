@@ -44,16 +44,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, message: 'Pedido não encontrado' });
     }
 
-    // Mapeia status do Asaas para PaymentStatus e OrderStatus
+    // Mapeia status do Asaas para PaymentStatus
+    // Nota: Não atualizamos automaticamente o status do pedido para CONFIRMED
+    // O admin precisa aprovar manualmente após o pagamento ser confirmado
     let newPaymentStatus: 'PENDING' | 'CONFIRMED' | 'OVERDUE' | 'REFUNDED' | 'CANCELLED' = 'PENDING';
-    let newOrderStatus: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | null = null;
+    let newOrderStatus: 'CANCELLED' | null = null;
 
     switch (asaasStatus) {
       case 'CONFIRMED':
       case 'RECEIVED':
       case 'RECEIVED_IN_CASH':
         newPaymentStatus = 'CONFIRMED';
-        newOrderStatus = 'CONFIRMED';
+        // Pedido permanece PENDING, aguardando aprovação manual do admin
         break;
         
       case 'OVERDUE':
@@ -88,9 +90,10 @@ export async function POST(request: NextRequest) {
       notes: string;
     } = {
       paymentStatus: newPaymentStatus,
-      notes: `${order.notes || ''}\n[${new Date().toISOString()}] Webhook: ${asaasStatus}`.trim(),
+      notes: `${order.notes || ''}\n[${new Date().toISOString()}] Pagamento: ${asaasStatus}`.trim(),
     };
 
+    // Só atualiza status do pedido para CANCELLED (reembolso, chargeback, etc)
     if (newOrderStatus && order.status !== newOrderStatus) {
       updateData.status = newOrderStatus;
     }

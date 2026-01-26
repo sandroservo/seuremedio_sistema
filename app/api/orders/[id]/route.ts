@@ -52,12 +52,66 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
+// Transições de estado permitidas
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+
+// Estados que requerem pagamento confirmado (não pode pular direto de PENDING)
+const STATES_REQUIRING_PAYMENT = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
 // PUT /api/orders/[id] - Atualiza status do pedido
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params
     const body = await request.json()
     const { status, notes } = body
+
+    // Busca o pedido atual para validações
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      select: { status: true, paymentStatus: true, paymentId: true },
+    })
+
+    if (!currentOrder) {
+      return NextResponse.json(
+        { error: 'Pedido não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    if (status) {
+      const currentStatus = currentOrder.status.toUpperCase()
+      const newStatus = status.toUpperCase()
+      
+      // Validação de transição de estado
+      const allowedNext = ALLOWED_TRANSITIONS[currentStatus] || []
+      if (!allowedNext.includes(newStatus)) {
+        return NextResponse.json(
+          { error: `Transição de status inválida: ${currentStatus} → ${newStatus}` },
+          { status: 400 }
+        )
+      }
+
+      // Validação: pedidos com pagamento online precisam de confirmação de pagamento
+      // antes de avançar para qualquer estado de aprovação/fulfillment
+      if (currentStatus === 'PENDING' && STATES_REQUIRING_PAYMENT.includes(newStatus)) {
+        const hasOnlinePayment = !!currentOrder.paymentId
+        const paymentConfirmed = currentOrder.paymentStatus === 'CONFIRMED'
+        
+        if (hasOnlinePayment && !paymentConfirmed) {
+          return NextResponse.json(
+            { error: 'Não é possível aprovar o pedido. O pagamento ainda não foi confirmado.' },
+            { status: 400 }
+          )
+        }
+      }
+    }
 
     const order = await prisma.order.update({
       where: { id },
