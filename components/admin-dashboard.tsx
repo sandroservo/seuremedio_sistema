@@ -1841,6 +1841,18 @@ export function AdminDashboard() {
                         onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
                         placeholder="💊"
                       />
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {['💊', '💉', '🩹', '🩺', '🏥', '⚕️', '🔬', '🧪', '🧬', '🦠', '🫀', '🫁', '🧠', '👁️', '👂', '🦷', '🦴', '🩻', '❤️', '🔥', '🤧', '🤒', '🤕', '😷', '🥗', '🧴', '💧', '🌡️', '⏰', '🌙', '☀️', '🍼', '👶', '🧓', '🐕', '📦'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setCategoryForm({ ...categoryForm, icon: emoji })}
+                            className={`w-8 h-8 text-lg rounded hover:bg-muted transition ${categoryForm.icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Cor (Tailwind)</label>
