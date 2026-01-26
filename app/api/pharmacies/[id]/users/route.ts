@@ -40,18 +40,57 @@ export async function POST(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { userId } = body;
+    const { userId, name, email, password, role, phone } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId é obrigatório' }, { status: 400 });
+    if (userId) {
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { pharmacyId: id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone: true,
+        },
+      });
+      return NextResponse.json(user);
     }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { pharmacyId: id },
+    if (!name || !email || !password || !role) {
+      return NextResponse.json({ error: 'Nome, email, senha e função são obrigatórios' }, { status: 400 });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
     });
 
-    return NextResponse.json(user);
+    if (existingUser) {
+      return NextResponse.json({ error: 'Este email já está cadastrado' }, { status: 409 });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: role as 'ADMIN' | 'DELIVERY',
+        phone: phone || null,
+        pharmacyId: id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+      },
+    });
+
+    return NextResponse.json(newUser);
   } catch (error) {
     console.error('Erro ao adicionar usuário à farmácia:', error);
     return NextResponse.json({ error: 'Erro ao adicionar usuário' }, { status: 500 });

@@ -29,12 +29,23 @@ import {
   Loader2,
   X,
   LogOut,
+  UserPlus,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
+
+interface PharmacyUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+}
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const { user, logout, isLoading: authLoading } = useAuth();
-  const { pharmacies, isLoading, createPharmacy, updatePharmacy, deletePharmacy, toggleActive } = usePharmacies();
+  const { pharmacies, isLoading, createPharmacy, updatePharmacy, deletePharmacy, toggleActive, refetch } = usePharmacies();
   
   const [showForm, setShowForm] = useState(false);
   const [editingPharmacy, setEditingPharmacy] = useState<Pharmacy | null>(null);
@@ -49,6 +60,20 @@ export default function SuperAdminDashboard() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Pharmacy | null>(null);
 
+  const [managingPharmacy, setManagingPharmacy] = useState<Pharmacy | null>(null);
+  const [pharmacyUsers, setPharmacyUsers] = useState<PharmacyUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'ADMIN' as 'ADMIN' | 'DELIVERY',
+    phone: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [addingUser, setAddingUser] = useState(false);
+
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'SUPER_ADMIN')) {
       router.replace('/super-admin/login');
@@ -58,7 +83,6 @@ export default function SuperAdminDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
     try {
       if (editingPharmacy) {
         await updatePharmacy(editingPharmacy.id, formData);
@@ -114,6 +138,68 @@ export default function SuperAdminDashboard() {
       });
     } catch {
       setFeedback({ type: 'error', message: 'Erro ao alterar status' });
+    }
+  };
+
+  const handleManageUsers = async (pharmacy: Pharmacy) => {
+    setManagingPharmacy(pharmacy);
+    setLoadingUsers(true);
+    try {
+      const res = await fetch(`/api/pharmacies/${pharmacy.id}/users`);
+      if (res.ok) {
+        const data = await res.json();
+        setPharmacyUsers(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managingPharmacy) return;
+    
+    setAddingUser(true);
+    try {
+      const res = await fetch(`/api/pharmacies/${managingPharmacy.id}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUserData),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setPharmacyUsers([...pharmacyUsers, data]);
+        setNewUserData({ name: '', email: '', password: '', role: 'ADMIN', phone: '' });
+        setShowAddUser(false);
+        setFeedback({ type: 'success', message: 'Usuário adicionado com sucesso!' });
+        refetch();
+      } else {
+        const error = await res.json();
+        setFeedback({ type: 'error', message: error.error || 'Erro ao adicionar usuário' });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Erro ao adicionar usuário' });
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!managingPharmacy) return;
+    try {
+      const res = await fetch(`/api/pharmacies/${managingPharmacy.id}/users/${userId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setPharmacyUsers(pharmacyUsers.filter(u => u.id !== userId));
+        setFeedback({ type: 'success', message: 'Usuário removido da farmácia' });
+        refetch();
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Erro ao remover usuário' });
     }
   };
 
@@ -359,7 +445,16 @@ export default function SuperAdminDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleManageUsers(pharmacy)}
+                          title="Gerenciar Usuários"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleToggleActive(pharmacy)}
+                          title={pharmacy.active ? 'Desativar' : 'Ativar'}
                         >
                           <Power className="h-4 w-4" />
                         </Button>
@@ -367,6 +462,7 @@ export default function SuperAdminDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(pharmacy)}
+                          title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -375,6 +471,7 @@ export default function SuperAdminDashboard() {
                           size="sm"
                           onClick={() => setDeleteConfirm(pharmacy)}
                           className="text-red-600 hover:text-red-700"
+                          title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -418,6 +515,170 @@ export default function SuperAdminDashboard() {
             <Button variant="destructive" onClick={handleDelete}>
               Excluir
             </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!managingPharmacy} onOpenChange={() => { setManagingPharmacy(null); setShowAddUser(false); }}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Usuários - {managingPharmacy?.name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Gerencie os administradores e entregadores desta farmácia
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="py-4">
+            {!showAddUser && (
+              <Button onClick={() => setShowAddUser(true)} className="mb-4">
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Usuário
+              </Button>
+            )}
+
+            {showAddUser && (
+              <Card className="mb-4">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Novo Usuário</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddUser} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Nome *</label>
+                        <Input
+                          value={newUserData.name}
+                          onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                          placeholder="Nome completo"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Email *</label>
+                        <Input
+                          type="email"
+                          value={newUserData.email}
+                          onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                          placeholder="email@exemplo.com"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Senha *</label>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            value={newUserData.password}
+                            onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                            placeholder="••••••••"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Telefone</label>
+                        <Input
+                          value={newUserData.phone}
+                          onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Função *</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="role"
+                            value="ADMIN"
+                            checked={newUserData.role === 'ADMIN'}
+                            onChange={() => setNewUserData({ ...newUserData, role: 'ADMIN' })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Administrador</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="role"
+                            value="DELIVERY"
+                            checked={newUserData.role === 'DELIVERY'}
+                            onChange={() => setNewUserData({ ...newUserData, role: 'DELIVERY' })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Entregador</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={addingUser}>
+                        {addingUser && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Adicionar
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setShowAddUser(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {loadingUsers ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : pharmacyUsers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhum usuário associado a esta farmácia</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pharmacyUsers.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{u.name}</p>
+                      <p className="text-sm text-muted-foreground">{u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        u.role === 'ADMIN' 
+                          ? 'bg-purple-100 text-purple-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {u.role === 'ADMIN' ? 'Admin' : 'Entregador'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveUser(u.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel>Fechar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
