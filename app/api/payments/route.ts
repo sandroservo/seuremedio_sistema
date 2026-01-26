@@ -10,6 +10,7 @@ import {
   createOrGetCustomer,
   createPixPayment,
   createBoletoPayment,
+  createCreditCardPayment,
   isAsaasConfigured,
 } from '@/lib/asaas';
 
@@ -25,11 +26,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { orderId, paymentMethod, customer } = body;
+    const { orderId, paymentMethod, customer, creditCard, creditCardHolderInfo } = body;
 
     if (!orderId || !paymentMethod || !customer) {
       return NextResponse.json(
         { error: 'Dados incompletos' },
+        { status: 400 }
+      );
+    }
+
+    if (paymentMethod === 'credit_card' && (!creditCard || !creditCardHolderInfo)) {
+      return NextResponse.json(
+        { error: 'Dados do cartão incompletos' },
         { status: 400 }
       );
     }
@@ -71,6 +79,27 @@ export async function POST(request: NextRequest) {
       payment = await createPixPayment(asaasCustomer.id, value, description);
     } else if (paymentMethod === 'boleto') {
       payment = await createBoletoPayment(asaasCustomer.id, value, description);
+    } else if (paymentMethod === 'credit_card') {
+      payment = await createCreditCardPayment(
+        asaasCustomer.id,
+        value,
+        description,
+        {
+          holderName: creditCard.holderName,
+          number: creditCard.number.replace(/\s/g, ''),
+          expiryMonth: creditCard.expiryMonth,
+          expiryYear: creditCard.expiryYear,
+          ccv: creditCard.ccv,
+        },
+        {
+          name: creditCardHolderInfo.name,
+          email: creditCardHolderInfo.email,
+          cpfCnpj: creditCardHolderInfo.cpfCnpj.replace(/\D/g, ''),
+          phone: creditCardHolderInfo.phone?.replace(/\D/g, '') || '',
+          postalCode: creditCardHolderInfo.postalCode.replace(/\D/g, ''),
+          addressNumber: creditCardHolderInfo.addressNumber,
+        }
+      );
     } else {
       return NextResponse.json(
         { error: 'Método de pagamento não suportado' },

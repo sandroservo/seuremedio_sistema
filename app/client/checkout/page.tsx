@@ -158,8 +158,8 @@ export default function CheckoutPage() {
       }
     }
     
-    // Validar CPF se Asaas estiver configurado e for PIX ou Boleto
-    if (asaasConfigured && (paymentMethod === 'pix')) {
+    // Validar CPF se Asaas estiver configurado e for PIX ou Cartão
+    if (asaasConfigured && (paymentMethod === 'pix' || paymentMethod === 'credit')) {
       if (!customerData.cpf || customerData.cpf.replace(/\D/g, '').length !== 11) {
         setError('CPF inválido');
         return;
@@ -193,37 +193,82 @@ export default function CheckoutPage() {
 
       const orderId = order?.id || 'PEDIDO-' + Date.now();
 
-      // Se Asaas está configurado e é PIX, gerar cobrança
-      if (asaasConfigured && paymentMethod === 'pix' && order?.id) {
-        setIsGeneratingPix(true);
-        try {
-          const paymentRes = await fetch('/api/payments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: order.id,
-              paymentMethod: 'pix',
-              customer: {
-                name: user.name,
-                email: user.email,
-                cpfCnpj: customerData.cpf.replace(/\D/g, ''),
-                phone: user.phone,
-              },
-            }),
-          });
-
-          if (paymentRes.ok) {
-            const payment = await paymentRes.json();
-            setPixData({
-              qrCodeUrl: payment.pixQrCodeUrl,
-              copiaECola: payment.pixCopiaECola,
-              paymentId: payment.paymentId,
+      // Se Asaas está configurado, gerar cobrança
+      if (asaasConfigured && order?.id) {
+        if (paymentMethod === 'pix') {
+          setIsGeneratingPix(true);
+          try {
+            const paymentRes = await fetch('/api/payments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: order.id,
+                paymentMethod: 'pix',
+                customer: {
+                  name: user.name,
+                  email: user.email,
+                  cpfCnpj: customerData.cpf.replace(/\D/g, ''),
+                  phone: user.phone,
+                },
+              }),
             });
+
+            if (paymentRes.ok) {
+              const payment = await paymentRes.json();
+              setPixData({
+                qrCodeUrl: payment.pixQrCodeUrl,
+                copiaECola: payment.pixCopiaECola,
+                paymentId: payment.paymentId,
+              });
+            }
+          } catch {
+            // Continua mesmo se falhar o PIX
+          } finally {
+            setIsGeneratingPix(false);
           }
-        } catch {
-          // Continua mesmo se falhar o PIX
-        } finally {
-          setIsGeneratingPix(false);
+        } else if (paymentMethod === 'credit') {
+          // Processar cartão de crédito
+          try {
+            const [expiryMonth, expiryYear] = cardData.expiry.split('/');
+            const paymentRes = await fetch('/api/payments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: order.id,
+                paymentMethod: 'credit_card',
+                customer: {
+                  name: user.name,
+                  email: user.email,
+                  cpfCnpj: customerData.cpf.replace(/\D/g, ''),
+                  phone: user.phone,
+                },
+                creditCard: {
+                  holderName: cardData.name,
+                  number: cardData.number,
+                  expiryMonth: expiryMonth?.trim(),
+                  expiryYear: expiryYear?.trim()?.length === 2 ? '20' + expiryYear.trim() : expiryYear?.trim(),
+                  ccv: cardData.cvv,
+                },
+                creditCardHolderInfo: {
+                  name: cardData.name,
+                  email: user.email,
+                  cpfCnpj: customerData.cpf,
+                  phone: user.phone,
+                  postalCode: address.zipCode,
+                  addressNumber: address.number,
+                },
+              }),
+            });
+
+            if (!paymentRes.ok) {
+              const errorData = await paymentRes.json();
+              throw new Error(errorData.error || 'Erro ao processar cartão');
+            }
+          } catch (paymentErr: any) {
+            setError(paymentErr.message || 'Erro ao processar pagamento com cartão');
+            setIsSubmitting(false);
+            return;
+          }
         }
       }
 
@@ -486,6 +531,24 @@ export default function CheckoutPage() {
 
                   {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
                     <div className="space-y-4 pt-4 border-t">
+                      {asaasConfigured && (
+                        <div>
+                          <label className="text-sm font-medium">CPF do titular *</label>
+                          <Input
+                            placeholder="000.000.000-00"
+                            value={customerData.cpf}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '');
+                              const formatted = value
+                                .replace(/(\d{3})(\d)/, '$1.$2')
+                                .replace(/(\d{3})(\d)/, '$1.$2')
+                                .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+                                .slice(0, 14);
+                              setCustomerData({ ...customerData, cpf: formatted });
+                            }}
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="text-sm font-medium">Número do cartão</label>
                         <Input
