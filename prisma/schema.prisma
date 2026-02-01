@@ -17,33 +17,6 @@ enum UserRole {
   CLIENT
   ADMIN
   DELIVERY
-  SUPER_ADMIN
-}
-
-// Modelo de Farmácia
-model Pharmacy {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  logo        String?
-  address     String?
-  phone       String?
-  email       String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relacionamentos
-  users       User[]
-  medications Medication[]
-  orders      Order[]
-  categories  Category[]
-  banners     Banner[]
-  settings    Settings[]
-
-  @@index([slug])
-  @@index([active])
 }
 
 enum OrderStatus {
@@ -73,12 +46,10 @@ model User {
   address       String?
   emailVerified DateTime?
   image         String?
-  pharmacyId    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relacionamentos
-  pharmacy      Pharmacy?      @relation(fields: [pharmacyId], references: [id])
   orders        Order[]        @relation("ClientOrders")
   deliveries    DeliveryTask[] @relation("DeliveryPerson")
   accounts      Account[]
@@ -86,35 +57,30 @@ model User {
 
   @@index([email])
   @@index([role])
-  @@index([pharmacyId])
 }
 
 // Modelo de Categoria
 model Category {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   description String?
   icon        String?
   color       String?
   active      Boolean  @default(true)
   order       Int      @default(0)
-  pharmacyId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  pharmacy    Pharmacy? @relation(fields: [pharmacyId], references: [id])
   medications Medication[]
 
-  @@unique([name, pharmacyId])
   @@index([name])
   @@index([active])
-  @@index([pharmacyId])
 }
 
 // Modelo de Medicamento
 model Medication {
   id                   String    @id @default(cuid())
-  name                 String
+  name                 String    @unique
   description          String
   price                Decimal   @db.Decimal(10, 2)
   category             String
@@ -123,20 +89,16 @@ model Medication {
   stock                Int       @default(0)
   image                String?
   active               Boolean   @default(true)
-  pharmacyId           String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
   // Relacionamentos
-  pharmacy     Pharmacy?   @relation(fields: [pharmacyId], references: [id])
   orderItems   OrderItem[]
   categoryRef  Category?   @relation(fields: [categoryId], references: [id])
 
-  @@unique([name, pharmacyId])
   @@index([name])
   @@index([category])
   @@index([categoryId])
-  @@index([pharmacyId])
 }
 
 // Enum de Status de Pagamento
@@ -152,7 +114,6 @@ enum PaymentStatus {
 model Order {
   id              String        @id @default(cuid())
   clientId        String
-  pharmacyId      String?
   totalPrice      Decimal       @db.Decimal(10, 2)
   status          OrderStatus   @default(PENDING)
   shippingAddress String
@@ -164,13 +125,11 @@ model Order {
   updatedAt       DateTime      @updatedAt
 
   // Relacionamentos
-  pharmacy     Pharmacy?     @relation(fields: [pharmacyId], references: [id])
   client       User          @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Cascade)
   items        OrderItem[]
   deliveryTask DeliveryTask?
 
   @@index([clientId])
-  @@index([pharmacyId])
   @@index([status])
   @@index([createdAt])
   @@index([paymentId])
@@ -257,39 +216,30 @@ model VerificationToken {
 
 // Modelo de Configurações do Sistema
 model Settings {
-  id         String    @id @default(cuid())
-  key        String
-  value      String    @db.Text
-  pharmacyId String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id])
-
-  @@unique([key, pharmacyId])
   @@index([key])
-  @@index([pharmacyId])
 }
 
 // Modelo de Banner Promocional
 model Banner {
-  id          String    @id @default(cuid())
-  title       String
-  subtitle    String
-  discount    String
-  bgColor     String    @default("from-amber-50 to-orange-50")
-  borderColor String    @default("border-amber-100")
-  image       String?
-  action      String?
-  active      Boolean   @default(true)
-  order       Int       @default(0)
-  pharmacyId  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  pharmacy    Pharmacy? @relation(fields: [pharmacyId], references: [id])
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String
+  discount  String
+  bgColor   String   @default("from-amber-50 to-orange-50")
+  borderColor String @default("border-amber-100")
+  image     String?
+  action    String?
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([active])
   @@index([order])
-  @@index([pharmacyId])
 }

@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
 
       const user = await res.json();
       
-      if (user.role !== 'ADMIN') {
+      if (user.role !== 'admin') {
         setError('Este login é exclusivo para administradores');
         setIsLoading(false);
         return;

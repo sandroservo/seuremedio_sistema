@@ -32,7 +32,7 @@ interface UseMedicationsReturn {
   removeMedication: (id: string) => Promise<boolean>;
 }
 
-export function useMedications(loadAll: boolean = false, pharmacyId?: string): UseMedicationsReturn {
+export function useMedications(loadAll: boolean = false): UseMedicationsReturn {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

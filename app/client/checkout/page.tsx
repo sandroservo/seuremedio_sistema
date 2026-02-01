@@ -56,7 +56,6 @@ export default function CheckoutPage() {
   const { addOrder } = useOrders(user?.id);
   
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [pharmacyId, setPharmacyId] = useState<string | null>(null);
   const [step, setStep] = useState<'review' | 'address' | 'payment' | 'confirm'>('review');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<{ orderId: string } | null>(null);
@@ -138,22 +137,11 @@ export default function CheckoutPage() {
     if (savedCart) {
       try {
         const parsed = JSON.parse(savedCart);
-        if (parsed.items) {
-          const items: CartItem[] = Object.entries(parsed.items).map(([medicationId, quantity]) => ({
-            medicationId,
-            quantity: quantity as number,
-          }));
-          setCart(items);
-          if (parsed.pharmacyId) {
-            setPharmacyId(parsed.pharmacyId);
-          }
-        } else {
-          const items: CartItem[] = Object.entries(parsed).map(([medicationId, quantity]) => ({
-            medicationId,
-            quantity: quantity as number,
-          }));
-          setCart(items);
-        }
+        const items: CartItem[] = Object.entries(parsed).map(([medicationId, quantity]) => ({
+          medicationId,
+          quantity: quantity as number,
+        }));
+        setCart(items);
       } catch {
         setCart([]);
       }
@@ -243,7 +231,6 @@ export default function CheckoutPage() {
         items,
         paymentMethod: paymentMethodMap[paymentMethod],
         ...(orderNotes && { notes: orderNotes }),
-        ...(pharmacyId && { pharmacyId }),
       });
 
       const orderId = order?.id || 'PEDIDO-' + Date.now();

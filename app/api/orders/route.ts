@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
-    const pharmacyId = searchParams.get('pharmacyId')
     const status = searchParams.get('status')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -20,8 +19,7 @@ export async function GET(request: NextRequest) {
 
     const where = {
       ...(clientId && { clientId }),
-      ...(pharmacyId && { pharmacyId }),
-      ...(status && { status: status as unknown as 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }),
+      ...(status && { status: status as any }),
     }
 
     const [orders, total] = await Promise.all([
@@ -76,7 +74,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, items, shippingAddress, notes, paymentMethod, pharmacyId } = body
+    const { clientId, items, shippingAddress, notes, paymentMethod } = body
 
     if (!clientId || !items || items.length === 0 || !shippingAddress) {
       return NextResponse.json(
@@ -128,7 +126,6 @@ export async function POST(request: NextRequest) {
           shippingAddress,
           notes,
           ...(paymentMethod && { paymentMethod }),
-          ...(pharmacyId && { pharmacyId }),
           items: {
             create: orderItems,
           },

@@ -1,17 +1,10 @@
 # Seu Remédio Delivery
 
-A multi-pharmacy medication delivery platform built with Next.js and Prisma.
+A medication delivery application built with Next.js and Prisma.
 
 ## Overview
 
-This is a multi-tenant pharmacy delivery platform where multiple pharmacies can operate with their own catalog, admin team, and delivery personnel. Customers can browse medications from different pharmacies, place orders, and track deliveries in real-time.
-
-## Multi-Pharmacy Architecture
-
-- **Super Admin**: Manages all pharmacies, can create/edit/delete pharmacies
-- **Pharmacy Admin**: Manages their pharmacy's catalog, orders, and staff
-- **Pharmacy Delivery**: Handles deliveries for their assigned pharmacy
-- **Client**: Can browse all active pharmacies and place orders
+This is a pharmacy delivery platform that allows customers to browse medications, place orders, and track deliveries. It includes user authentication, order management, and delivery tracking features.
 
 ## Project Architecture
 
@@ -51,31 +44,9 @@ npm run dev -- -p 5000 -H 0.0.0.0
 
 ## User Roles
 
-- `CLIENT` - Regular customers who can browse and order from any pharmacy
-- `ADMIN` - Pharmacy administrators who manage their pharmacy's medications and orders
-- `DELIVERY` - Delivery personnel who handle order delivery for their pharmacy
-- `SUPER_ADMIN` - Platform managers who oversee all pharmacies
-
-## Pharmacy Model
-
-Each pharmacy has:
-- `name` - Display name
-- `slug` - URL-friendly identifier
-- `description` - About the pharmacy
-- `logo` - Brand image
-- `address` - Physical location
-- `phone` - Contact number
-- `email` - Contact email
-- `active` - Whether visible to customers
-
-### API Endpoints
-
-- `GET /api/pharmacies` - List all pharmacies
-- `POST /api/pharmacies` - Create new pharmacy (Super Admin)
-- `PUT /api/pharmacies/[id]` - Update pharmacy (Super Admin)
-- `DELETE /api/pharmacies/[id]` - Delete pharmacy (Super Admin)
-- `GET /api/pharmacies/[id]/users` - List pharmacy staff
-- `POST /api/pharmacies/[id]/users` - Add user to pharmacy
+- `CLIENT` - Regular customers who can browse and order
+- `ADMIN` - Administrators who manage medications and orders
+- `DELIVERY` - Delivery personnel who handle order delivery
 
 ## Payment Integration (Asaas)
 

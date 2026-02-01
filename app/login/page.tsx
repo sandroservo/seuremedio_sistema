@@ -41,20 +41,7 @@ export default function LoginPage() {
 
       const user = await res.json();
       login(user);
-      
-      switch (user.role) {
-        case 'SUPER_ADMIN':
-          router.push('/super-admin/dashboard');
-          break;
-        case 'ADMIN':
-          router.push('/admin/dashboard');
-          break;
-        case 'DELIVERY':
-          router.push('/delivery/dashboard');
-          break;
-        default:
-          router.push('/client/dashboard');
-      }
+      router.push('/client/dashboard');
     } catch {
       setError('Erro ao fazer login. Tente novamente.');
     }

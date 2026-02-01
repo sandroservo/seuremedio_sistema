@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
         phone: true,
         address: true,
         password: true,
-        pharmacyId: true,
         createdAt: true,
       },
     })
@@ -53,10 +52,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Remove a senha do retorno
+    // Remove a senha do retorno e mapeia role para lowercase
     const { password: _, ...userWithoutPassword } = user
+    const mappedUser = {
+      ...userWithoutPassword,
+      role: user.role.toLowerCase() as 'admin' | 'client' | 'delivery',
+    }
 
-    return NextResponse.json(userWithoutPassword)
+    return NextResponse.json(mappedUser)
   } catch (error) {
     console.error('Erro no login:', error)
     return NextResponse.json(
