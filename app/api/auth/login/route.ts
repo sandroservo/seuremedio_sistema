@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
         phone: true,
         address: true,
         password: true,
+        pharmacyId: true,
         createdAt: true,
       },
     })
